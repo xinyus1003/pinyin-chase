@@ -231,6 +231,23 @@ export function bootstrap(root: HTMLElement): void {
     run.keyboard?.focus();
   }
 
+  function pauseGame(): void {
+    if (!run.session || run.session.getSnapshot().phase !== 'playing') return;
+    run.session.pause();
+    typingMetrics.pause(performance.now());
+    feedback.setTension(0);
+    showPauseOverlay();
+    syncAndTrigger();
+    run.keyboard?.blur();
+  }
+
+  function restartFromPause(): void {
+    if (!run.session || run.session.getSnapshot().phase !== 'paused') return;
+    feedback.destroy();
+    feedback.unlock();
+    startRun();
+  }
+
   function onFocusLost(): void {
     if (!run.session || focusLossAction(run.session.getSnapshot().phase) !== 'pause') return;
     run.session.pause();
@@ -315,10 +332,16 @@ export function bootstrap(root: HTMLElement): void {
         onFocusLost,
       });
       bindGameOverButtons(root, {
+        onPause: pauseGame,
         onRestart: restartRun,
+        onRestartFromPause: restartFromPause,
         onChangeDifficulty: showMenu,
         onResume: activateGameSurface,
       });
+
+      const pause = root.querySelector<HTMLButtonElement>('[data-testid="pause"]');
+      pause?.addEventListener('pointerdown', preventFocusTransfer);
+      pause?.addEventListener('mousedown', preventFocusTransfer);
 
       const mute = root.querySelector<HTMLButtonElement>('[data-testid="mute"]');
       if (mute) {
