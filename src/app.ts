@@ -10,10 +10,13 @@ import { stopCurrentRun, type RunResources } from './core/runLifecycle';
 import { CanvasRenderer } from './render/canvasRenderer';
 import { loadProgress, saveProgress, type PersistedProgress } from './core/storage';
 import { DIFFICULTIES } from './core/difficulty';
+import {
+  createBestDistanceTracker,
+  createLevelClearTimer,
+  nextLevelNumber,
+  visibilityAction,
+} from './core/runFlow';
 import type { Difficulty, GameSnapshot } from './types';
-
-const LEVEL_CLEAR_DELAY_MS = 900;
-const SAVE_EVERY_LETTERS = 10;
 
 export function bootstrap(root: HTMLElement): void {
   let progress: PersistedProgress = loadProgress();
@@ -25,8 +28,8 @@ export function bootstrap(root: HTMLElement): void {
   let resizeObserver: ResizeObserver | null = null;
   let viewportListener: (() => void) | null = null;
   let previousPhase: GameSnapshot['phase'] = 'playing';
-  let levelClearTimer: number | null = null;
-  let unsavedLetters = 0;
+  const levelTimer = createLevelClearTimer();
+  const distanceTracker = createBestDistanceTracker(progress.bestDistance);
   const run: RunResources<GameSession, GameLoop, NativeKeyboard> = { loop: null, keyboard: null, session: null };
 
   function disposeRenderer(): void {
@@ -37,21 +40,6 @@ export function bootstrap(root: HTMLElement): void {
     }
     viewportListener = null;
     renderer = null;
-  }
-
-  function clearLevelTransition(): void {
-    if (levelClearTimer !== null) {
-      window.clearTimeout(levelClearTimer);
-      levelClearTimer = null;
-    }
-  }
-
-  function scheduleNextLevel(): void {
-    if (levelClearTimer !== null) return;
-    levelClearTimer = window.setTimeout(() => {
-      levelClearTimer = null;
-      advanceLevel();
-    }, LEVEL_CLEAR_DELAY_MS);
   }
 
   function startSession(): GameSession {
@@ -97,12 +85,12 @@ export function bootstrap(root: HTMLElement): void {
       if (snapshot.phase === 'levelClear') {
         renderer?.emitLevelClear();
         saveProgress(progress);
-        unsavedLetters = 0;
-        scheduleNextLevel();
+        distanceTracker.flush();
+        levelTimer.schedule(advanceLevel);
       } else if (snapshot.phase === 'gameOver') {
         renderer?.emitCaught();
         saveProgress(progress);
-        unsavedLetters = 0;
+        distanceTracker.flush();
       }
       previousPhase = snapshot.phase;
     }
@@ -110,8 +98,9 @@ export function bootstrap(root: HTMLElement): void {
 
   function advanceLevel(): void {
     if (!run.session) return;
-    if (run.session.getSnapshot().phase !== 'levelClear') return;
-    levelNumber += 1;
+    const nextLevel = nextLevelNumber(run.session.getSnapshot().phase, levelNumber);
+    if (nextLevel === null) return;
+    levelNumber = nextLevel;
     const session = startSession();
     if (document.hidden) {
       session.pause();
@@ -142,12 +131,11 @@ export function bootstrap(root: HTMLElement): void {
 
   function onVisibilityChange(): void {
     if (!run.session) return;
-    if (document.hidden) {
-      if (run.session.getSnapshot().phase === 'playing') {
-        run.session.pause();
-        syncView();
-      }
-    } else if (run.session.getSnapshot().phase === 'paused') {
+    const action = visibilityAction(document.hidden, run.session.getSnapshot().phase);
+    if (action === 'pause') {
+      run.session.pause();
+      syncView();
+    } else if (action === 'show-resume') {
       showPauseOverlay();
     }
   }
@@ -161,10 +149,9 @@ export function bootstrap(root: HTMLElement): void {
       // previous keyboard listeners alive.
       stopCurrentRun(run);
       disposeRenderer();
-      clearLevelTransition();
+      levelTimer.clear();
       renderGameShell(root);
       levelNumber = 1;
-      unsavedLetters = 0;
       const session = startSession();
 
       const input = root.querySelector<HTMLInputElement>('[data-testid="native-input"]')!;
@@ -175,15 +162,11 @@ export function bootstrap(root: HTMLElement): void {
             const outcome = run.session.typeLetter(letter);
             if (outcome.kind === 'correct') {
               renderer?.emitCorrect();
-              const runLetters = run.session.getSnapshot().runLetters;
-              if (runLetters > progress.bestDistance) {
-                progress = { ...progress, bestDistance: runLetters };
-                unsavedLetters += 1;
-                if (unsavedLetters >= SAVE_EVERY_LETTERS) {
-                  saveProgress(progress);
-                  unsavedLetters = 0;
-                }
+              const distance = distanceTracker.record(run.session.getSnapshot().runLetters);
+              if (distance.recorded > 0) {
+                progress = { ...progress, bestDistance: distance.bestDistance };
               }
+              if (distance.shouldSave) saveProgress(progress);
             } else if (outcome.kind === 'wrong') {
               wrongCount += 1;
               renderer?.emitWrong();
@@ -245,7 +228,7 @@ export function bootstrap(root: HTMLElement): void {
   function showMenu(): void {
     stopCurrentRun(run);
     disposeRenderer();
-    clearLevelTransition();
+    levelTimer.clear();
     renderMenu(root, progress.bestLevel, selected, (difficulty) => {
       selected = difficulty;
       progress = { ...progress, lastDifficulty: difficulty };
