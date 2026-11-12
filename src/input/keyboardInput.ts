@@ -1,14 +1,19 @@
 import { normalizePinyin } from '../core/pinyin';
 
+function commonPrefixLength(a: string, b: string): number {
+  const limit = Math.min(a.length, b.length);
+  let index = 0;
+  while (index < limit && a[index] === b[index]) index += 1;
+  return index;
+}
+
 export class LetterStream {
   private lastNormalized = '';
 
   ingestPreview(text: string): string[] {
     const normalized = normalizePinyin(text);
-    if (!normalized.startsWith(this.lastNormalized)) {
-      this.lastNormalized = '';
-    }
-    const added = normalized.slice(this.lastNormalized.length);
+    const shared = commonPrefixLength(this.lastNormalized, normalized);
+    const added = normalized.slice(shared);
     this.lastNormalized = normalized;
     return [...added];
   }
@@ -55,13 +60,13 @@ export class NativeKeyboard {
     this.listen('beforeinput', (event) => {
       if (this.composing) return;
       const inputEvent = event as InputEvent;
-      if (inputEvent.inputType === 'insertText' && inputEvent.data) {
-        const letters = normalizePinyin(inputEvent.data);
+      if (inputEvent.inputType === 'insertText') {
+        event.preventDefault();
+        const letters = normalizePinyin(inputEvent.data ?? '');
         if (letters) {
-          event.preventDefault();
           this.callbacks.onLetters([...letters]);
-          this.input.value = '';
         }
+        this.input.value = '';
       }
     });
     this.listen('paste', (event) => {
