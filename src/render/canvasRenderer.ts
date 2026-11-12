@@ -1,5 +1,5 @@
 import type { GameSnapshot } from '../types';
-import { sampleMaze } from '../core/maze';
+import { LETTER_WORLD_STEP, sampleMaze } from '../core/maze';
 import { Camera } from './camera';
 import { drawEnemy, drawHero } from './characters';
 
@@ -53,7 +53,7 @@ export class CanvasRenderer {
     ctx.clearRect(0, 0, width, height);
     ctx.save();
 
-    const heroDistance = snapshot.level.maze.heroStartDistance + snapshot.heroLetters * 28;
+    const heroDistance = snapshot.level.maze.heroStartDistance + snapshot.heroLetters * LETTER_WORLD_STEP;
     const hero = sampleMaze(snapshot.level.maze, heroDistance);
     this.heroPosition = { x: hero.x, y: hero.y };
     this.camera.follow(hero.x, hero.y, dt);
@@ -62,7 +62,7 @@ export class CanvasRenderer {
     this.drawMaze(snapshot);
     this.drawGate(snapshot);
 
-    const enemy = sampleMaze(snapshot.level.maze, hero.distance - snapshot.gap * 28);
+    const enemy = sampleMaze(snapshot.level.maze, hero.distance - snapshot.gap * LETTER_WORLD_STEP);
     ctx.save();
     ctx.translate(enemy.x, enemy.y);
     drawEnemy(ctx, time, 1 - Math.min(1, snapshot.gap / snapshot.level.initialGap));
