@@ -7,7 +7,9 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && vite build",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "generate:phrases": "node scripts/generate-phrase-bank.mjs",
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "pinyin-pro": "^3.29.5"

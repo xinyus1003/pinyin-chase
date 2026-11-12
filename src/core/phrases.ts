@@ -1,16 +1,8 @@
-import { pinyin } from 'pinyin-pro';
-import { PHRASE_TEXTS } from '../data/phraseTexts';
+import { PHRASE_BANK } from '../data/phraseBank';
 import type { Difficulty, Phrase, RandomSource } from '../types';
 import { phraseCountFor, phraseTierFor } from './difficulty';
 
-function makePhrase(zh: string, tier: 1 | 2 | 3 | 4 | 5): Phrase {
-  const pinyinText = pinyin(zh, { toneType: 'none', type: 'array', v: true }).join(' ');
-  return { id: `${tier}:${zh}`, zh, pinyin: pinyinText, tier };
-}
-
-export const PHRASE_BANK: Phrase[] = (
-  [1, 2, 3, 4, 5] as const
-).flatMap((tier) => PHRASE_TEXTS[tier].map((zh) => makePhrase(zh, tier)));
+export { PHRASE_BANK };
 
 function shuffled<T>(items: readonly T[], rng: RandomSource): T[] {
   const copy = [...items];
