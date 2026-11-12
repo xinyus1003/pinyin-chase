@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
   nextLevelNumber,
@@ -122,5 +123,26 @@ describe('next level number', () => {
     expect(nextLevelNumber('paused', 3)).toBeNull();
     expect(nextLevelNumber('gameOver', 3)).toBeNull();
     expect(nextLevelNumber('menu', 3)).toBeNull();
+  });
+});
+
+describe('active tension policy', () => {
+  it('maps gap proximity only while playing', () => {
+    expect(activeTensionForPhase('playing', 0, 10)).toBe(1);
+    expect(activeTensionForPhase('playing', 5, 10)).toBe(0.5);
+    expect(activeTensionForPhase('playing', 10, 10)).toBe(0);
+  });
+
+  it('returns zero for paused and every non-chase phase', () => {
+    for (const phase of ['paused', 'levelClear', 'gameOver', 'menu'] as const) {
+      expect(activeTensionForPhase(phase, 0, 10)).toBe(0);
+    }
+  });
+
+  it('clamps out-of-range gaps and guards bad initial distances', () => {
+    expect(activeTensionForPhase('playing', -5, 10)).toBe(1);
+    expect(activeTensionForPhase('playing', 25, 10)).toBe(0);
+    expect(activeTensionForPhase('playing', 0, 0)).toBe(0);
+    expect(activeTensionForPhase('playing', 0, Number.NaN)).toBe(0);
   });
 });

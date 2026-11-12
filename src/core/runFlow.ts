@@ -88,6 +88,17 @@ export function visibilityAction(hidden: boolean, phase: GamePhase): VisibilityA
 }
 
 /**
+ * Proximity heartbeat is only meaningful during an active chase. Paused,
+ * level-clear, game-over and menu phases all return 0 so the feedback timer
+ * stops instead of beeping in the background. The result is clamped to [0, 1].
+ */
+export function activeTensionForPhase(phase: GamePhase, gap: number, initialGap: number): number {
+  if (phase !== 'playing') return 0;
+  if (!Number.isFinite(initialGap) || initialGap <= 0) return 0;
+  return Math.max(0, Math.min(1, 1 - gap / initialGap));
+}
+
+/**
  * Only a cleared level advances the run, so duplicate timers or stale phases
  * can never skip a level.
  */
