@@ -1,5 +1,10 @@
-export function drawHero(ctx: CanvasRenderingContext2D, time: number, stunned: boolean): void {
-  const bounce = stunned ? 0 : Math.sin(time / 70) * 2;
+export function drawHero(
+  ctx: CanvasRenderingContext2D,
+  time: number,
+  stunned: boolean,
+  animate = true,
+): void {
+  const bounce = animate && !stunned ? Math.sin(time / 70) * 2 : 0;
   ctx.save();
   ctx.translate(0, bounce);
   ctx.fillStyle = '#fff6d8';
@@ -17,13 +22,18 @@ export function drawHero(ctx: CanvasRenderingContext2D, time: number, stunned: b
   ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(-7, 2);
-  ctx.quadraticCurveTo(-22, 8 + Math.sin(time / 90) * 4, -27, -3);
+  ctx.quadraticCurveTo(-22, 8 + (animate ? Math.sin(time / 90) * 4 : 0), -27, -3);
   ctx.stroke();
   ctx.restore();
 }
 
-export function drawEnemy(ctx: CanvasRenderingContext2D, time: number, danger: number): void {
-  const pulse = 1 + Math.sin(time / 100) * 0.04 + danger * 0.08;
+export function drawEnemy(
+  ctx: CanvasRenderingContext2D,
+  time: number,
+  danger: number,
+  animate = true,
+): void {
+  const pulse = (animate ? 1 + Math.sin(time / 100) * 0.04 : 1) + danger * 0.08;
   ctx.save();
   ctx.scale(pulse, pulse);
   ctx.fillStyle = '#ff4d4d';

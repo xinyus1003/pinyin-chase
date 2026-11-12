@@ -1,6 +1,10 @@
 import type { Phrase } from '../types';
 import { normalizePinyin } from '../core/pinyin';
 
+export function promptCacheKey(phrase: Phrase, normalizedLetterIndex: number): string {
+  return `${phrase.id}\u0000${phrase.pinyin}\u0000${normalizedLetterIndex}`;
+}
+
 export function updatePrompt(root: HTMLElement, phrase: Phrase, letterIndex: number): void {
   const normalized = normalizePinyin(phrase.pinyin);
   let normalizedIndex = 0;

@@ -20,17 +20,22 @@ export function renderGameShell(root: HTMLElement): void {
           <input data-testid="native-input" type="text" inputmode="text" autocomplete="off"
             autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="输入拼音" />
           <span data-testid="progress" data-progress="0">0 字母</span>
-          <span data-testid="wrong-count" data-count="0" hidden></span>
+          <span data-testid="wrong-count" data-count="0" role="status" aria-live="polite"
+            aria-atomic="true" hidden></span>
         </div>
       </section>
-      <div class="game-over" data-testid="game-over" hidden>
-        <h2>被追上了</h2>
+      <div class="game-over" data-testid="game-over" role="dialog" aria-modal="true"
+        aria-labelledby="game-over-title" hidden>
+        <h2 id="game-over-title">被追上了</h2>
         <p>你到达了第 <strong data-testid="reached-level">1</strong> 关</p>
-        <button data-action="restart">再来一次</button>
-        <button data-action="change-difficulty">更换难度</button>
+        <button type="button" data-action="restart">再来一次</button>
+        <button type="button" data-action="change-difficulty">更换难度</button>
       </div>
-      <div class="pause-overlay" data-testid="pause-overlay" hidden>
-        <button type="button" data-action="resume">点击继续</button>
+      <div class="pause-overlay" data-testid="pause-overlay" role="dialog" aria-modal="true"
+        aria-labelledby="pause-title" hidden>
+        <h2 id="pause-title">游戏暂停</h2>
+        <p>键盘已收起。点击继续，回到逃跑。</p>
+        <button type="button" data-action="resume">继续游戏</button>
       </div>
     </main>
   `;

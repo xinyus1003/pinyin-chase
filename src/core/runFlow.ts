@@ -87,6 +87,13 @@ export function visibilityAction(hidden: boolean, phase: GamePhase): VisibilityA
   return 'none';
 }
 
+export type FocusLossAction = 'pause' | 'none';
+
+/** A blurred native input is only safe while the chase is actively running. */
+export function focusLossAction(phase: GamePhase): FocusLossAction {
+  return phase === 'playing' ? 'pause' : 'none';
+}
+
 /**
  * Proximity heartbeat is only meaningful during an active chase. Paused,
  * level-clear, game-over and menu phases all return 0 so the feedback timer

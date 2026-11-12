@@ -15,7 +15,8 @@ export function renderMenu(
       <p class="lede">照着拼音敲字母。答对前进，答错就会被身后的怪物追上。</p>
       <div class="difficulty-list" role="group" aria-label="选择难度">
         ${(Object.keys(DIFFICULTIES) as Difficulty[]).map((key) => `
-          <button class="difficulty ${key === selected ? 'selected' : ''}" data-difficulty="${key}">
+          <button type="button" class="difficulty ${key === selected ? 'selected' : ''}"
+            data-difficulty="${key}" aria-pressed="${key === selected}">
             <strong>${DIFFICULTIES[key].label}</strong>
             <span>${key === 'easy' ? '适合第一次逃跑' : key === 'normal' ? '速度与弯道升级' : '生僻词和追兵都更快'}</span>
           </button>
@@ -29,4 +30,5 @@ export function renderMenu(
     button.addEventListener('click', () => onSelect(button.dataset.difficulty as Difficulty));
   });
   root.querySelector<HTMLButtonElement>('[data-action="start"]')?.addEventListener('click', onStart);
+  root.querySelector<HTMLButtonElement>(`[data-difficulty="${selected}"]`)?.focus({ preventScroll: true });
 }

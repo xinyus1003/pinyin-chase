@@ -20,4 +20,22 @@ describe('createLevel', () => {
     expect(first.phrases.map((phrase) => phrase.zh)).toEqual(second.phrases.map((phrase) => phrase.zh));
     expect(first.maze.samples).toEqual(second.maze.samples);
   });
+
+  it('falls back to a deterministic straight corridor when generation fails', () => {
+    const failingGenerator = () => {
+      throw new Error('generation failed');
+    };
+
+    const first = createLevel('normal', 2, 321, failingGenerator);
+    const second = createLevel('normal', 2, 321, failingGenerator);
+
+    expect(first.maze.samples).toEqual(second.maze.samples);
+    expect(first.maze.samples.length).toBeGreaterThanOrEqual(2);
+    expect(first.maze.samples[0]).toMatchObject({ x: 0, y: 0, distance: 0 });
+    expect(first.maze.samples.at(-1)?.distance).toBeCloseTo(
+      (first.letters.length + first.initialGap) * 28,
+      4,
+    );
+    expect(first.maze.heroStartDistance).toBeCloseTo(first.initialGap * 28, 4);
+  });
 });

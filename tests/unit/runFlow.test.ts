@@ -3,6 +3,7 @@ import {
   activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
+  focusLossAction,
   nextLevelNumber,
   visibilityAction,
 } from '../../src/core/runFlow';
@@ -113,6 +114,18 @@ describe('visibility action', () => {
     expect(visibilityAction(false, 'gameOver')).toBe('none');
     expect(visibilityAction(true, 'menu')).toBe('none');
     expect(visibilityAction(false, 'menu')).toBe('none');
+  });
+});
+
+describe('focus loss action', () => {
+  it('pauses only an actively playing run', () => {
+    expect(focusLossAction('playing')).toBe('pause');
+  });
+
+  it('does nothing for paused, transition, terminal and menu phases', () => {
+    for (const phase of ['paused', 'levelClear', 'gameOver', 'menu'] as const) {
+      expect(focusLossAction(phase)).toBe('none');
+    }
   });
 });
 

@@ -2,7 +2,7 @@ import { createLevel } from './core/level';
 import { GameSession } from './core/game';
 import { GameLoop } from './core/loop';
 import { NativeKeyboard } from './input/keyboardInput';
-import { updatePrompt } from './ui/promptView';
+import { promptCacheKey, updatePrompt } from './ui/promptView';
 import { renderMenu } from './ui/menuView';
 import { bindGameOverButtons, renderGameShell } from './ui/gameView';
 import { isPromptError, wrongIndicator } from './ui/errorState';
@@ -15,10 +15,32 @@ import {
   activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
+  focusLossAction,
   nextLevelNumber,
   visibilityAction,
 } from './core/runFlow';
+import { REDUCED_MOTION_QUERY } from './render/motion';
 import type { Difficulty, GameSnapshot } from './types';
+
+type GameElements = {
+  level: HTMLElement;
+  gap: HTMLElement;
+  difficulty: HTMLElement;
+  reachedLevel: HTMLElement;
+  progress: HTMLElement;
+  prompt: HTMLElement;
+  gameOver: HTMLElement;
+  wrong: HTMLElement;
+  promptCard: HTMLElement;
+};
+
+function setText(element: HTMLElement, value: string): void {
+  if (element.textContent !== value) element.textContent = value;
+}
+
+function setHidden(element: HTMLElement, hidden: boolean): void {
+  if (element.hidden !== hidden) element.hidden = hidden;
+}
 
 export function bootstrap(root: HTMLElement): void {
   let progress: PersistedProgress = loadProgress();
@@ -27,6 +49,8 @@ export function bootstrap(root: HTMLElement): void {
   let wrongCount = 0;
   let starting = false;
   let renderer: CanvasRenderer | null = null;
+  let gameElements: GameElements | null = null;
+  let lastPromptKey = '';
   let resizeObserver: ResizeObserver | null = null;
   let previousPhase: GameSnapshot['phase'] = 'playing';
   const feedback = new FeedbackController();
@@ -39,6 +63,7 @@ export function bootstrap(root: HTMLElement): void {
     resizeObserver?.disconnect();
     resizeObserver = null;
     renderer = null;
+    gameElements = null;
   }
 
   function syncMuteButton(mute: HTMLButtonElement): void {
@@ -60,6 +85,7 @@ export function bootstrap(root: HTMLElement): void {
     const session = new GameSession(createLevel(selected, levelNumber, Date.now()));
     run.session = session;
     wrongCount = 0;
+    lastPromptKey = '';
     previousPhase = 'playing';
     progress = { ...progress, bestLevel: Math.max(progress.bestLevel, levelNumber) };
     saveProgress(progress);
@@ -67,28 +93,29 @@ export function bootstrap(root: HTMLElement): void {
   }
 
   function syncView(): void {
-    if (!run.session) return;
+    if (!run.session || !gameElements) return;
     const snapshot = run.session.getSnapshot();
-    root.querySelector<HTMLElement>('[data-testid="level"]')!.textContent = String(snapshot.level.number);
-    root.querySelector<HTMLElement>('[data-testid="gap"]')!.textContent = Math.max(0, snapshot.gap).toFixed(1);
-    root.querySelector<HTMLElement>('[data-testid="difficulty-label"]')!.textContent = DIFFICULTIES[snapshot.level.difficulty].label;
-    root.querySelector<HTMLElement>('[data-testid="reached-level"]')!.textContent = String(snapshot.level.number);
-    const progressBar = root.querySelector<HTMLElement>('[data-testid="progress"]')!;
-    progressBar.dataset.progress = String(snapshot.heroLetters);
-    progressBar.textContent = `${snapshot.heroLetters} 字母`;
+    setText(gameElements.level, String(snapshot.level.number));
+    setText(gameElements.gap, Math.max(0, snapshot.gap).toFixed(1));
+    setText(gameElements.difficulty, DIFFICULTIES[snapshot.level.difficulty].label);
+    setText(gameElements.reachedLevel, String(snapshot.level.number));
+    const progress = String(snapshot.heroLetters);
+    if (gameElements.progress.dataset.progress !== progress) {
+      gameElements.progress.dataset.progress = progress;
+    }
+    setText(gameElements.progress, `${snapshot.heroLetters} 字母`);
     const phrase = snapshot.level.phrases[snapshot.phraseIndex] ?? snapshot.level.phrases.at(-1)!;
-    const prompt = root.querySelector<HTMLElement>('[data-testid="prompt"]')!;
-    updatePrompt(prompt, phrase, snapshot.letterIndex);
-    const over = root.querySelector<HTMLElement>('[data-testid="game-over"]')!;
-    over.hidden = snapshot.phase !== 'gameOver';
-    const wrong = root.querySelector<HTMLElement>('[data-testid="wrong-count"]')!;
+    const nextPromptKey = promptCacheKey(phrase, snapshot.letterIndex);
+    if (nextPromptKey !== lastPromptKey) {
+      updatePrompt(gameElements.prompt, phrase, snapshot.letterIndex);
+      lastPromptKey = nextPromptKey;
+    }
+    setHidden(gameElements.gameOver, snapshot.phase !== 'gameOver');
     const indicator = wrongIndicator(wrongCount);
-    wrong.hidden = !indicator.visible;
-    wrong.textContent = indicator.label;
-    wrong.dataset.count = String(wrongCount);
-    root
-      .querySelector<HTMLElement>('.prompt-card')
-      ?.classList.toggle('has-error', isPromptError(snapshot.stunRemaining));
+    setHidden(gameElements.wrong, !indicator.visible);
+    setText(gameElements.wrong, indicator.label);
+    gameElements.wrong.dataset.count = String(wrongCount);
+    gameElements.promptCard.classList.toggle('has-error', isPromptError(snapshot.stunRemaining));
   }
 
   function syncAndTrigger(): void {
@@ -110,6 +137,8 @@ export function bootstrap(root: HTMLElement): void {
         renderer?.emitCaught();
         saveProgress(progress);
         distanceTracker.flush();
+        run.keyboard?.blur();
+        root.querySelector<HTMLButtonElement>('[data-action="restart"]')?.focus({ preventScroll: true });
       }
       previousPhase = phase;
     }
@@ -121,6 +150,7 @@ export function bootstrap(root: HTMLElement): void {
     if (nextLevel === null) return;
     levelNumber = nextLevel;
     const session = startSession();
+    renderer?.resetLevel(session.getSnapshot());
     if (document.hidden) {
       session.pause();
       showPauseOverlay();
@@ -132,7 +162,9 @@ export function bootstrap(root: HTMLElement): void {
 
   function showPauseOverlay(): void {
     const overlay = root.querySelector<HTMLElement>('[data-testid="pause-overlay"]');
-    if (overlay) overlay.hidden = false;
+    if (!overlay) return;
+    overlay.hidden = false;
+    overlay.querySelector<HTMLButtonElement>('[data-action="resume"]')?.focus({ preventScroll: true });
   }
 
   function hidePauseOverlay(): void {
@@ -140,12 +172,22 @@ export function bootstrap(root: HTMLElement): void {
     if (overlay) overlay.hidden = true;
   }
 
-  function resumeFromPause(): void {
-    if (!run.session) return;
-    if (run.session.getSnapshot().phase !== 'paused') return;
-    run.session.resume();
-    hidePauseOverlay();
+  function activateGameSurface(): void {
+    feedback.unlock();
+    if (run.session?.getSnapshot().phase === 'paused') {
+      run.session.resume();
+      hidePauseOverlay();
+      syncAndTrigger();
+    }
     run.keyboard?.focus();
+  }
+
+  function onFocusLost(): void {
+    if (!run.session || focusLossAction(run.session.getSnapshot().phase) !== 'pause') return;
+    run.session.pause();
+    feedback.setTension(0);
+    showPauseOverlay();
+    syncAndTrigger();
   }
 
   function onVisibilityChange(): void {
@@ -156,7 +198,7 @@ export function bootstrap(root: HTMLElement): void {
       // Background timers (the heartbeat) keep firing while rAF is throttled,
       // so explicitly silence feedback the moment the game is paused.
       feedback.setTension(0);
-      syncView();
+      syncAndTrigger();
     } else if (action === 'show-resume') {
       showPauseOverlay();
     }
@@ -173,6 +215,17 @@ export function bootstrap(root: HTMLElement): void {
       disposeRenderer();
       levelTimer.clear();
       renderGameShell(root);
+      gameElements = {
+        level: root.querySelector<HTMLElement>('[data-testid="level"]')!,
+        gap: root.querySelector<HTMLElement>('[data-testid="gap"]')!,
+        difficulty: root.querySelector<HTMLElement>('[data-testid="difficulty-label"]')!,
+        reachedLevel: root.querySelector<HTMLElement>('[data-testid="reached-level"]')!,
+        progress: root.querySelector<HTMLElement>('[data-testid="progress"]')!,
+        prompt: root.querySelector<HTMLElement>('[data-testid="prompt"]')!,
+        gameOver: root.querySelector<HTMLElement>('[data-testid="game-over"]')!,
+        wrong: root.querySelector<HTMLElement>('[data-testid="wrong-count"]')!,
+        promptCard: root.querySelector<HTMLElement>('.prompt-card')!,
+      };
       levelNumber = 1;
       const session = startSession();
 
@@ -198,11 +251,12 @@ export function bootstrap(root: HTMLElement): void {
             syncAndTrigger();
           }
         },
+        onFocusLost,
       });
       bindGameOverButtons(root, {
         onRestart: restartRun,
         onChangeDifficulty: showMenu,
-        onResume: resumeFromPause,
+        onResume: activateGameSurface,
       });
 
       const mute = root.querySelector<HTMLButtonElement>('[data-testid="mute"]');
@@ -217,9 +271,13 @@ export function bootstrap(root: HTMLElement): void {
       }
 
       const canvas = root.querySelector<HTMLCanvasElement>('[data-testid="game-canvas"]')!;
-      canvas.addEventListener('click', resumeFromPause);
-      input.addEventListener('click', resumeFromPause);
-      renderer = new CanvasRenderer(canvas);
+      const promptCard = root.querySelector<HTMLElement>('.prompt-card')!;
+      canvas.addEventListener('click', activateGameSurface);
+      promptCard.addEventListener('click', activateGameSurface);
+      input.addEventListener('click', activateGameSurface);
+      const reducedMotion = typeof window.matchMedia === 'function'
+        && window.matchMedia(REDUCED_MOTION_QUERY).matches;
+      renderer = new CanvasRenderer(canvas, reducedMotion);
       resizeObserver = new ResizeObserver(() => renderer?.resize());
       resizeObserver.observe(canvas);
 
