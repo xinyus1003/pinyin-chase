@@ -91,6 +91,10 @@ export class GameSession {
     this.phase = this.previousPhase === 'paused' ? 'playing' : this.previousPhase;
   }
 
+  completeLevel(): void {
+    if (this.phase === 'levelClear') this.phase = 'playing';
+  }
+
   restartLevel(): void {
     this.phraseIndex = 0;
     this.letterIndex = 0;

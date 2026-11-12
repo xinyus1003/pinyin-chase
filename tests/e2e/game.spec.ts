@@ -46,3 +46,24 @@ test('renders a non-empty canvas maze', async ({ page }) => {
   });
   expect(hasPixels).toBe(true);
 });
+
+test('reads persisted best level on the menu', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('pinyin-chase:progress', JSON.stringify({
+      bestLevel: 9,
+      bestDistance: 200,
+      lastDifficulty: 'normal',
+      muted: false,
+    }));
+  });
+  await page.goto('/');
+  await expect(page.getByText('本机最高：第 9 关')).toBeVisible();
+});
+
+test('hard mode without input reaches game over', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '困难' }).click();
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+  await expect(page.getByTestId('game-over')).toBeVisible({ timeout: 6000 });
+  await expect(page.getByRole('button', { name: '再来一次' })).toBeVisible();
+});

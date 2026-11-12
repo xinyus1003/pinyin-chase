@@ -37,3 +37,6 @@ canvas { width: 100%; flex: 1; min-height: 180px; border-radius: 20px; backgroun
 .prompt-card.has-error .pinyin-letter.current { color: #ff8787; }
 [data-testid="wrong-count"] { color: #ff8787; font-weight: 800; white-space: nowrap; }
 [data-testid="wrong-count"][hidden] { display: none; }
+.pause-overlay { position: fixed; inset: 0; display: grid; place-content: center; padding: 24px; background: #071426cc; text-align: center; }
+.pause-overlay[hidden] { display: none; }
+.pause-overlay button { border: 2px solid #ddf247; border-radius: 18px; background: #ddf247; color: #071426; padding: 16px 28px; font: inherit; font-weight: 800; }

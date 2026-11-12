@@ -1,6 +1,7 @@
 export type GameViewCallbacks = {
   onRestart(): void;
   onChangeDifficulty(): void;
+  onResume(): void;
 };
 
 export function renderGameShell(root: HTMLElement): void {
@@ -28,6 +29,9 @@ export function renderGameShell(root: HTMLElement): void {
         <button data-action="restart">再来一次</button>
         <button data-action="change-difficulty">更换难度</button>
       </div>
+      <div class="pause-overlay" data-testid="pause-overlay" hidden>
+        <button type="button" data-action="resume">点击继续</button>
+      </div>
     </main>
   `;
 }
@@ -35,4 +39,5 @@ export function renderGameShell(root: HTMLElement): void {
 export function bindGameOverButtons(root: HTMLElement, callbacks: GameViewCallbacks): void {
   root.querySelector<HTMLButtonElement>('[data-action="restart"]')?.addEventListener('click', callbacks.onRestart);
   root.querySelector<HTMLButtonElement>('[data-action="change-difficulty"]')?.addEventListener('click', callbacks.onChangeDifficulty);
+  root.querySelector<HTMLButtonElement>('[data-action="resume"]')?.addEventListener('click', callbacks.onResume);
 }

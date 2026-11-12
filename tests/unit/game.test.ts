@@ -82,4 +82,12 @@ describe('GameSession', () => {
     session.resume();
     expect(session.getSnapshot().phase).toBe('playing');
   });
+
+  it('advances to a fresh playing phase when a cleared level is completed', () => {
+    const session = new GameSession(level([phrase('你好', 'ni hao')]));
+    for (const letter of ['n', 'i', 'h', 'a', 'o']) session.typeLetter(letter);
+    expect(session.getSnapshot().phase).toBe('levelClear');
+    session.completeLevel();
+    expect(session.getSnapshot().phase).toBe('playing');
+  });
 });
