@@ -9,6 +9,7 @@ import { isPromptError, wrongIndicator } from './ui/errorState';
 import { stopCurrentRun, type RunResources } from './core/runLifecycle';
 import { CanvasRenderer } from './render/canvasRenderer';
 import { loadProgress, saveProgress, type PersistedProgress } from './core/storage';
+import { FeedbackController } from './audio/feedback';
 import { DIFFICULTIES } from './core/difficulty';
 import {
   createBestDistanceTracker,
@@ -26,8 +27,9 @@ export function bootstrap(root: HTMLElement): void {
   let starting = false;
   let renderer: CanvasRenderer | null = null;
   let resizeObserver: ResizeObserver | null = null;
-  let viewportListener: (() => void) | null = null;
   let previousPhase: GameSnapshot['phase'] = 'playing';
+  const feedback = new FeedbackController();
+  feedback.setMuted(progress.muted);
   const levelTimer = createLevelClearTimer();
   const distanceTracker = createBestDistanceTracker(progress.bestDistance);
   const run: RunResources<GameSession, GameLoop, NativeKeyboard> = { loop: null, keyboard: null, session: null };
@@ -35,11 +37,22 @@ export function bootstrap(root: HTMLElement): void {
   function disposeRenderer(): void {
     resizeObserver?.disconnect();
     resizeObserver = null;
-    if (viewportListener && window.visualViewport) {
-      window.visualViewport.removeEventListener('resize', viewportListener);
-    }
-    viewportListener = null;
     renderer = null;
+  }
+
+  function syncMuteButton(mute: HTMLButtonElement): void {
+    mute.setAttribute('aria-pressed', String(progress.muted));
+    mute.textContent = progress.muted ? '取消静音' : '静音';
+  }
+
+  function syncAppHeight(): void {
+    const height = window.visualViewport?.height ?? window.innerHeight;
+    document.documentElement.style.setProperty('--app-height', `${height}px`);
+  }
+
+  function onViewportChange(): void {
+    syncAppHeight();
+    renderer?.resize();
   }
 
   function startSession(): GameSession {
@@ -81,18 +94,28 @@ export function bootstrap(root: HTMLElement): void {
     if (!run.session) return;
     syncView();
     const snapshot = run.session.getSnapshot();
-    if (snapshot.phase !== previousPhase) {
-      if (snapshot.phase === 'levelClear') {
+    const phase = snapshot.phase;
+    // Proximity tension only pulses during an active chase; terminal phases
+    // silence the heartbeat so game-over/level-clear screens do not drone.
+    feedback.setTension(
+      phase === 'playing' || phase === 'paused'
+        ? 1 - snapshot.gap / snapshot.level.initialGap
+        : 0,
+    );
+    if (phase !== previousPhase) {
+      if (phase === 'levelClear') {
+        feedback.levelClear();
         renderer?.emitLevelClear();
         saveProgress(progress);
         distanceTracker.flush();
         levelTimer.schedule(advanceLevel);
-      } else if (snapshot.phase === 'gameOver') {
+      } else if (phase === 'gameOver') {
+        feedback.caught();
         renderer?.emitCaught();
         saveProgress(progress);
         distanceTracker.flush();
       }
-      previousPhase = snapshot.phase;
+      previousPhase = phase;
     }
   }
 
@@ -161,6 +184,7 @@ export function bootstrap(root: HTMLElement): void {
             if (!run.session) return;
             const outcome = run.session.typeLetter(letter);
             if (outcome.kind === 'correct') {
+              feedback.correct();
               renderer?.emitCorrect();
               const distance = distanceTracker.record(run.session.getSnapshot().runLetters);
               if (distance.recorded > 0) {
@@ -169,6 +193,7 @@ export function bootstrap(root: HTMLElement): void {
               if (distance.shouldSave) saveProgress(progress);
             } else if (outcome.kind === 'wrong') {
               wrongCount += 1;
+              feedback.wrong();
               renderer?.emitWrong();
             }
             syncAndTrigger();
@@ -181,14 +206,23 @@ export function bootstrap(root: HTMLElement): void {
         onResume: resumeFromPause,
       });
 
+      const mute = root.querySelector<HTMLButtonElement>('[data-testid="mute"]');
+      if (mute) {
+        syncMuteButton(mute);
+        mute.addEventListener('click', () => {
+          const muted = feedback.toggleMuted();
+          progress = { ...progress, muted };
+          saveProgress(progress);
+          syncMuteButton(mute);
+        });
+      }
+
       const canvas = root.querySelector<HTMLCanvasElement>('[data-testid="game-canvas"]')!;
       canvas.addEventListener('click', resumeFromPause);
       input.addEventListener('click', resumeFromPause);
       renderer = new CanvasRenderer(canvas);
       resizeObserver = new ResizeObserver(() => renderer?.resize());
       resizeObserver.observe(canvas);
-      viewportListener = () => renderer?.resize();
-      window.visualViewport?.addEventListener('resize', viewportListener);
 
       hidePauseOverlay();
       run.keyboard.focus();
@@ -214,6 +248,7 @@ export function bootstrap(root: HTMLElement): void {
   // on the (now detached) button are ignored instead of spawning another run.
   function startFromMenu(): void {
     if (run.loop) return;
+    feedback.unlock();
     startRun();
   }
 
@@ -222,6 +257,8 @@ export function bootstrap(root: HTMLElement): void {
   function restartRun(): void {
     const over = root.querySelector<HTMLElement>('[data-testid="game-over"]');
     if (!over || over.hidden) return;
+    feedback.destroy();
+    feedback.unlock();
     startRun();
   }
 
@@ -229,6 +266,7 @@ export function bootstrap(root: HTMLElement): void {
     stopCurrentRun(run);
     disposeRenderer();
     levelTimer.clear();
+    feedback.destroy();
     renderMenu(root, progress.bestLevel, selected, (difficulty) => {
       selected = difficulty;
       progress = { ...progress, lastDifficulty: difficulty };
@@ -238,5 +276,9 @@ export function bootstrap(root: HTMLElement): void {
   }
 
   document.addEventListener('visibilitychange', onVisibilityChange);
+  window.addEventListener('resize', onViewportChange);
+  window.addEventListener('orientationchange', onViewportChange);
+  window.visualViewport?.addEventListener('resize', onViewportChange);
+  syncAppHeight();
   showMenu();
 }

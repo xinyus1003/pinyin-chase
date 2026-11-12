@@ -67,3 +67,16 @@ test('hard mode without input reaches game over', async ({ page }) => {
   await expect(page.getByTestId('game-over')).toBeVisible({ timeout: 6000 });
   await expect(page.getByRole('button', { name: '再来一次' })).toBeVisible();
 });
+
+test('supports a phone viewport and a mute toggle', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+  await expect(page.getByTestId('native-input')).toBeFocused();
+  const mute = page.getByTestId('mute');
+  await expect(mute).toBeVisible();
+  await mute.click();
+  await expect(mute).toHaveAttribute('aria-pressed', 'true');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+  expect(overflow).toBe(false);
+});
