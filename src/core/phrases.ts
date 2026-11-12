@@ -4,7 +4,7 @@ import type { Difficulty, Phrase, RandomSource } from '../types';
 import { composeCountFor, phraseCountFor, phraseTierFor } from './difficulty';
 
 function makePhrase(zh: string, tier: 1 | 2 | 3 | 4 | 5): Phrase {
-  const pinyinText = pinyin(zh, { toneType: 'none', type: 'array' }).join(' ');
+  const pinyinText = pinyin(zh, { toneType: 'none', type: 'array', v: true }).join(' ');
   return { id: `${tier}:${zh}`, zh, pinyin: pinyinText, tier };
 }
 

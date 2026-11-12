@@ -49,3 +49,12 @@ describe('selectPhrases', () => {
     expect(lateAverage).toBeGreaterThan(earlyAverage);
   });
 });
+
+describe('hint uses v for ü', () => {
+  it('stores 绿灯 as lv and never lü', () => {
+    const greenLight = PHRASE_BANK.find((phrase) => phrase.zh === '绿灯');
+    expect(greenLight).toBeDefined();
+    expect(greenLight!.pinyin).toContain('lv');
+    expect(greenLight!.pinyin).not.toContain('lü');
+  });
+});
