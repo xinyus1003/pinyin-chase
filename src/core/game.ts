@@ -42,7 +42,8 @@ export class GameSession {
     if (this.phase !== 'playing' || this.stunRemaining > 0) return { kind: 'ignored' };
     const normalized = normalizePinyin(letter);
     if (!normalized) return { kind: 'ignored' };
-    const expected = this.level.letters[this.letterIndex];
+    const phraseLetters = normalizePinyin(this.level.phrases[this.phraseIndex]?.pinyin ?? '');
+    const expected = phraseLetters[this.letterIndex];
     if (!expected) return { kind: 'ignored' };
     if (normalized[0] !== expected) {
       this.gap = Math.max(-2, this.gap - WRONG_LUNGE);
@@ -57,7 +58,7 @@ export class GameSession {
     this.gap = Math.min(this.level.initialGap + MAX_EXTRA_GAP, this.gap + 1);
     this.catchElapsed = 0;
 
-    if (this.letterIndex >= normalizePinyin(this.level.phrases[this.phraseIndex]?.pinyin ?? '').length) {
+    if (this.letterIndex >= phraseLetters.length) {
       this.phraseIndex += 1;
       this.letterIndex = 0;
     }

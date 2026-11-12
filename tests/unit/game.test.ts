@@ -75,6 +75,22 @@ describe('GameSession', () => {
     expect(session.getSnapshot().gap).toBeLessThanOrEqual(3 + 6);
   });
 
+  it('uses the current phrase when advancing to a second phrase', () => {
+    const session = new GameSession(level([
+      phrase('你好', 'ni hao'),
+      phrase('再见', 'zai jian'),
+    ]));
+
+    for (const letter of ['n', 'i', 'h', 'a', 'o']) {
+      expect(session.typeLetter(letter).kind).toBe('correct');
+    }
+
+    expect(session.getSnapshot().phraseIndex).toBe(1);
+    expect(session.getSnapshot().letterIndex).toBe(0);
+    expect(session.typeLetter('z').kind).toBe('correct');
+    expect(session.getSnapshot().letterIndex).toBe(1);
+  });
+
   it('supports pause and resume', () => {
     const session = new GameSession(level([phrase('你好', 'ni hao')]));
     session.pause();
