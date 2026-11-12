@@ -32,3 +32,8 @@ canvas { width: 100%; flex: 1; min-height: 180px; border-radius: 20px; backgroun
 #app input { flex: 1; min-width: 0; height: 42px; border-radius: 12px; border: 1px solid #fff6d833; background: #071426; color: transparent; caret-color: transparent; padding: 0 12px; font-size: 16px; }
 .game-over { position: fixed; inset: 0; display: grid; place-content: center; gap: 12px; padding: 24px; background: #071426ee; text-align: center; }
 .game-over[hidden] { display: none; }
+.prompt-card.has-error { border-color: #ff6b6b; background: #3a1420; }
+.prompt-card.has-error .pinyin { color: #ffb3b3; }
+.prompt-card.has-error .pinyin-letter.current { color: #ff8787; }
+[data-testid="wrong-count"] { color: #ff8787; font-weight: 800; white-space: nowrap; }
+[data-testid="wrong-count"][hidden] { display: none; }

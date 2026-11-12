@@ -17,7 +17,7 @@ test('starts a run, focuses the native input and advances on a correct letter', 
   await expect(page.getByTestId('progress')).toHaveAttribute('data-progress', '1');
 });
 
-test('wrong input stalls progress and records an error', async ({ page }) => {
+test('wrong input stalls progress and shows a visible error state', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '开始逃跑' }).click();
   const pinyin = await page.getByTestId('prompt').getAttribute('data-pinyin');
@@ -25,5 +25,9 @@ test('wrong input stalls progress and records an error', async ({ page }) => {
   const wrong = expected === 'z' ? 'x' : 'z';
   await page.keyboard.press(wrong);
   await expect(page.getByTestId('progress')).toHaveAttribute('data-progress', '0');
-  await expect(page.getByTestId('wrong-count')).toHaveAttribute('data-count', '1');
+
+  const wrongCount = page.getByTestId('wrong-count');
+  await expect(wrongCount).toBeVisible();
+  await expect(wrongCount).toContainText('错误');
+  await expect(wrongCount).toHaveAttribute('data-count', '1');
 });
