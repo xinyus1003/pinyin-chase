@@ -5,6 +5,7 @@ import { NativeKeyboard } from './input/keyboardInput';
 import { promptCacheKey, updatePrompt } from './ui/promptView';
 import { renderMenu } from './ui/menuView';
 import { bindGameOverButtons, renderGameShell } from './ui/gameView';
+import { preventFocusTransfer } from './ui/focus';
 import { isPromptError, wrongIndicator } from './ui/errorState';
 import { stopCurrentRun, type RunResources } from './core/runLifecycle';
 import { CanvasRenderer } from './render/canvasRenderer';
@@ -262,6 +263,8 @@ export function bootstrap(root: HTMLElement): void {
       const mute = root.querySelector<HTMLButtonElement>('[data-testid="mute"]');
       if (mute) {
         syncMuteButton(mute);
+        mute.addEventListener('pointerdown', preventFocusTransfer);
+        mute.addEventListener('mousedown', preventFocusTransfer);
         mute.addEventListener('click', () => {
           const muted = feedback.toggleMuted();
           progress = { ...progress, muted };
