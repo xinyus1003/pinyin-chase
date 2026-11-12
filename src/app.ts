@@ -173,8 +173,8 @@ export function bootstrap(root: HTMLElement): void {
     const hud = root.querySelector<HTMLElement>('.hud-wrap')?.getBoundingClientRect();
     const prompt = gameElements.promptCard.getBoundingClientRect();
     renderer.setSafeArea(
-      (hud?.bottom ?? 0) + 6,
-      Math.max(0, window.innerHeight - prompt.top + 6),
+      (hud?.bottom ?? 0) + 10,
+      Math.max(0, window.innerHeight - prompt.top + 24),
     );
   }
 
