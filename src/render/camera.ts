@@ -25,7 +25,7 @@ export class Camera {
     this.y += (targetY - this.y) * smoothing;
   }
 
-  apply(ctx: CanvasRenderingContext2D, width: number, height: number): void {
-    ctx.translate(width / 2 - this.x, height / 2 - this.y);
+  apply(ctx: CanvasRenderingContext2D, width: number, centerY: number): void {
+    ctx.translate(width / 2 - this.x, centerY - this.y);
   }
 }

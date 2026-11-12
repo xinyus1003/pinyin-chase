@@ -3,6 +3,7 @@ import { LETTER_WORLD_STEP, sampleMaze } from '../core/maze';
 import { Camera } from './camera';
 import { drawEnemy, drawHero } from './characters';
 import { motionPolicy, prefersReducedMotion, type MotionPolicy } from './motion';
+import { focusYForSafeArea, type SafeArea } from './safeArea';
 
 type Particle = { x: number; y: number; vx: number; vy: number; life: number; color: string };
 const CAMERA_LOOK_AHEAD_LETTERS = 2.5;
@@ -16,6 +17,7 @@ export class CanvasRenderer {
   private lastFrame = 0;
   private visualHeroDistance: number | null = null;
   private mazePath: { key: string; path: Path2D } | null = null;
+  private safeArea: SafeArea = { top: 0, bottom: 0 };
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -34,6 +36,10 @@ export class CanvasRenderer {
     this.canvas.width = Math.max(1, Math.round(rect.width * dpr));
     this.canvas.height = Math.max(1, Math.round(rect.height * dpr));
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  setSafeArea(top: number, bottom: number): void {
+    this.safeArea = { top, bottom };
   }
 
   emitCorrect(): void {
@@ -87,7 +93,7 @@ export class CanvasRenderer {
     const cameraTarget = sampleMaze(snapshot.level.maze, lookAheadDistance);
     if (this.motion.snapPosition) this.camera.snapTo(cameraTarget.x, cameraTarget.y);
     else this.camera.follow(cameraTarget.x, cameraTarget.y, dt);
-    this.camera.apply(ctx, width, height);
+    this.camera.apply(ctx, width, focusYForSafeArea(height, this.safeArea));
 
     this.drawMaze(snapshot);
     this.drawGate(snapshot);

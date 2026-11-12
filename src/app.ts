@@ -165,6 +165,17 @@ export function bootstrap(root: HTMLElement): void {
     setText(gameElements.wrong, indicator.label);
     gameElements.wrong.dataset.count = String(wrongCount);
     gameElements.promptCard.classList.toggle('has-error', isPromptError(snapshot.stunRemaining));
+    syncRendererSafeArea();
+  }
+
+  function syncRendererSafeArea(): void {
+    if (!renderer || !gameElements) return;
+    const hud = root.querySelector<HTMLElement>('.hud-wrap')?.getBoundingClientRect();
+    const prompt = gameElements.promptCard.getBoundingClientRect();
+    renderer.setSafeArea(
+      (hud?.bottom ?? 0) + 6,
+      Math.max(0, window.innerHeight - prompt.top + 6),
+    );
   }
 
   function syncAndTrigger(): void {
