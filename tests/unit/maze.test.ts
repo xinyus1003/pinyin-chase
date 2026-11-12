@@ -13,6 +13,14 @@ describe('generateMaze', () => {
     expect(first.samples.map((point) => point.y)).toEqual(second.samples.map((point) => point.y));
   });
 
+  it('winds above and below its starting point', () => {
+    const maze = generateMaze({ seed: 42, letters: 30, initialGap: 8, bends: 6 });
+    const startY = maze.samples[0]!.y;
+    const ys = maze.samples.map((point) => point.y);
+    expect(Math.max(...ys)).toBeGreaterThan(startY);
+    expect(Math.min(...ys)).toBeLessThan(startY);
+  });
+
   it('samples continuous positions and clamps at both ends', () => {
     const maze = generateMaze({ seed: 9, letters: 20, initialGap: 6, bends: 5 });
     expect(sampleMaze(maze, -100).distance).toBe(0);
