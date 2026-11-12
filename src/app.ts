@@ -12,6 +12,7 @@ import { loadProgress, saveProgress, type PersistedProgress } from './core/stora
 import { FeedbackController } from './audio/feedback';
 import { DIFFICULTIES } from './core/difficulty';
 import {
+  activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
   nextLevelNumber,
@@ -95,13 +96,8 @@ export function bootstrap(root: HTMLElement): void {
     syncView();
     const snapshot = run.session.getSnapshot();
     const phase = snapshot.phase;
-    // Proximity tension only pulses during an active chase; terminal phases
-    // silence the heartbeat so game-over/level-clear screens do not drone.
-    feedback.setTension(
-      phase === 'playing' || phase === 'paused'
-        ? 1 - snapshot.gap / snapshot.level.initialGap
-        : 0,
-    );
+    // Only an active chase pulses tension; paused/terminal phases are silent.
+    feedback.setTension(activeTensionForPhase(phase, snapshot.gap, snapshot.level.initialGap));
     if (phase !== previousPhase) {
       if (phase === 'levelClear') {
         feedback.levelClear();
@@ -157,6 +153,9 @@ export function bootstrap(root: HTMLElement): void {
     const action = visibilityAction(document.hidden, run.session.getSnapshot().phase);
     if (action === 'pause') {
       run.session.pause();
+      // Background timers (the heartbeat) keep firing while rAF is throttled,
+      // so explicitly silence feedback the moment the game is paused.
+      feedback.setTension(0);
       syncView();
     } else if (action === 'show-resume') {
       showPauseOverlay();

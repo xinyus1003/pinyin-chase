@@ -69,8 +69,19 @@ export class FeedbackController {
 
   setTension(value: number): void {
     this.tension = Math.max(0, Math.min(1, value));
+    // Zero proximity tension means the heartbeat is no longer meaningful; stop
+    // the pending timer instead of leaving a silent self-rescheduling timeout.
+    if (this.tension === 0) {
+      if (this.pulseTimer !== null) globalThis.clearTimeout(this.pulseTimer);
+      this.pulseTimer = null;
+      return;
+    }
     if (this.pulseTimer !== null) return;
     const pulse = () => {
+      if (this.tension === 0) {
+        this.pulseTimer = null;
+        return;
+      }
       if (!this.muted && this.tension > 0.25) {
         this.tone(180 + this.tension * 120, 0.025, 'triangle', 0.04);
       }

@@ -188,6 +188,43 @@ describe('FeedbackController', () => {
     controller.destroy();
   });
 
+  it('zeroing tension cancels the pending heartbeat, and restarting schedules again', () => {
+    const { context, oscillators } = makeContext();
+    const controller = new FeedbackController(() => asAudioContext(context));
+    controller.unlock();
+
+    controller.setTension(0.8);
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(700);
+    expect(oscillators).toHaveLength(1);
+    expect(vi.getTimerCount()).toBe(1);
+
+    // A pulse is already pending at this point; zeroing must cancel it.
+    controller.setTension(0);
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(5000);
+    expect(oscillators).toHaveLength(1);
+
+    // Rising tension again must start a fresh heartbeat.
+    controller.setTension(0.8);
+    expect(vi.getTimerCount()).toBe(1);
+    vi.advanceTimersByTime(700);
+    expect(oscillators).toHaveLength(2);
+    controller.destroy();
+  });
+
+  it('keeps heartbeat silent and timer-free when zero tension is set first', () => {
+    const { context, oscillators } = makeContext();
+    const controller = new FeedbackController(() => asAudioContext(context));
+    controller.unlock();
+
+    controller.setTension(0);
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(5000);
+    expect(oscillators).toHaveLength(0);
+    controller.destroy();
+  });
+
   it('destroy clears the pulse timer and closes the context', () => {
     const { context, oscillators } = makeContext();
     const controller = new FeedbackController(() => asAudioContext(context));
