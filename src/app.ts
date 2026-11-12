@@ -6,6 +6,7 @@ import { promptCacheKey, updatePrompt } from './ui/promptView';
 import { renderMenu } from './ui/menuView';
 import { bindGameOverButtons, renderGameShell } from './ui/gameView';
 import { preventFocusTransfer } from './ui/focus';
+import { appViewportMetrics } from './ui/appViewport';
 import { isPromptError, wrongIndicator } from './ui/errorState';
 import { stopCurrentRun, type RunResources } from './core/runLifecycle';
 import { CanvasRenderer } from './render/canvasRenderer';
@@ -79,8 +80,9 @@ export function bootstrap(root: HTMLElement): void {
   }
 
   function syncAppHeight(): void {
-    const height = window.visualViewport?.height ?? window.innerHeight;
+    const { height, top } = appViewportMetrics(window.visualViewport, window.innerHeight);
     document.documentElement.style.setProperty('--app-height', `${height}px`);
+    document.documentElement.style.setProperty('--app-top', `${top}px`);
   }
 
   function onViewportChange(): void {

@@ -150,7 +150,10 @@ h1 {
 }
 
 .game-screen {
-  position: relative;
+  position: fixed;
+  top: var(--app-top, 0);
+  right: 0;
+  left: 0;
   height: var(--app-height, 100dvh);
   min-height: 0;
   padding: 0;
@@ -407,6 +410,43 @@ button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
   .input-row { margin-top: 7px; padding-top: 7px; }
   #app input { height: 37px; }
   .hud-wrap { gap: 5px; padding-top: max(8px, env(safe-area-inset-top)); }
+}
+@media (max-height: 520px) {
+  .hud-wrap {
+    gap: 0;
+    padding-bottom: 8px;
+    background: linear-gradient(180deg, #06101df2 0%, #06101da8 72%, transparent 100%);
+  }
+  .hud { gap: 6px; }
+  .hud-status { gap: 4px; padding: 5px 7px; font-size: .71rem; }
+  .hud-actions .icon-button { min-height: 30px; padding: 0 8px; }
+  .hud-actions { gap: 4px; }
+  .hud-metrics { display: none; }
+  .prompt-card {
+    bottom: max(6px, env(safe-area-inset-bottom));
+    max-height: 116px;
+    padding: 8px 11px;
+    border-radius: 18px;
+  }
+  .prompt { overflow: hidden; padding-right: 0; }
+  .zh {
+    overflow: hidden;
+    font-size: .9rem;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pinyin {
+    max-height: 2.7em;
+    margin-top: 3px;
+    overflow: hidden;
+    font-size: .7rem;
+    line-height: 1.35;
+    letter-spacing: .04em;
+  }
+  .input-row { gap: 6px; margin-top: 4px; padding-top: 4px; }
+  #app input { height: 32px; padding: 0 10px; }
+  [data-testid="progress"] { font-size: .66rem; }
 }
 @media (max-width: 350px) {
   .difficulty-list { grid-template-columns: 1fr; }

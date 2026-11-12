@@ -19,4 +19,14 @@ export function updatePrompt(root: HTMLElement, phrase: Phrase, letterIndex: num
   root.innerHTML = `<div class="zh">${phrase.zh}</div><div class="pinyin">${letters}</div>`;
   root.dataset.pinyin = phrase.pinyin;
   root.dataset.expected = normalized[letterIndex] ?? '';
+
+  const pinyinElement = root.querySelector<HTMLElement>('.pinyin');
+  const currentLetter = pinyinElement?.querySelector<HTMLElement>('.pinyin-letter.current');
+  if (pinyinElement && currentLetter && pinyinElement.scrollHeight > pinyinElement.clientHeight) {
+    const promptBounds = pinyinElement.getBoundingClientRect();
+    const letterBounds = currentLetter.getBoundingClientRect();
+    const distanceFromCenter = (letterBounds.top + letterBounds.height / 2)
+      - (promptBounds.top + promptBounds.height / 2);
+    pinyinElement.scrollTop = Math.max(0, pinyinElement.scrollTop + distanceFromCenter);
+  }
 }

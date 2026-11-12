@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+test('asks mobile browsers to resize the page around the keyboard', async ({ page }) => {
+  await page.goto('/');
+  const viewport = await page.locator('meta[name="viewport"]').getAttribute('content');
+  expect(viewport).toContain('interactive-widget=resizes-content');
+});
+
 test('starts a run, focuses the native input and advances on a correct letter', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: '拼音追逃' })).toBeVisible();
@@ -79,4 +85,68 @@ test('supports a phone viewport and a mute toggle', async ({ page }) => {
   await expect(mute).toHaveAttribute('aria-pressed', 'true');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   expect(overflow).toBe(false);
+});
+
+test('keeps the chase visible when the mobile keyboard shrinks the viewport', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+
+  // Simulate the remaining visual viewport on a phone after the native
+  // keyboard opens. The prompt previously consumed almost all of this space.
+  await page.setViewportSize({ width: 390, height: 300 });
+  await page.waitForFunction(() => (
+    getComputedStyle(document.documentElement).getPropertyValue('--app-height').trim() === '300px'
+  ));
+
+  const layout = await page.evaluate(() => {
+    const rect = (selector: string) => {
+      const bounds = document.querySelector(selector)?.getBoundingClientRect();
+      return bounds ? { top: bounds.top, height: bounds.height, bottom: bounds.bottom } : null;
+    };
+    const hud = rect('.hud-wrap');
+    const prompt = rect('.prompt-card');
+    const input = rect('[data-testid="native-input"]');
+    return { hud, prompt, input, viewportHeight: window.visualViewport?.height ?? window.innerHeight };
+  });
+
+  expect(layout.hud).not.toBeNull();
+  expect(layout.prompt).not.toBeNull();
+  expect(layout.input).not.toBeNull();
+  expect(layout.prompt!.height).toBeLessThanOrEqual(120);
+  expect(layout.prompt!.top - layout.hud!.bottom).toBeGreaterThanOrEqual(100);
+  expect(layout.input!.bottom).toBeLessThanOrEqual(layout.viewportHeight);
+});
+
+test('keeps the current pinyin letter visible in the compact prompt', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '极限' }).click();
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+  await page.setViewportSize({ width: 390, height: 300 });
+  await page.waitForFunction(() => (
+    getComputedStyle(document.documentElement).getPropertyValue('--app-height').trim() === '300px'
+  ));
+
+  const prompt = page.getByTestId('prompt');
+  const pinyin = (await prompt.getAttribute('data-pinyin'))?.toLowerCase().replace(/[^a-z]/g, '') ?? '';
+  expect(pinyin.length).toBeGreaterThan(80);
+
+  const overflowBeforeTyping = await page.locator('.pinyin').evaluate((element) => (
+    element.scrollHeight > element.clientHeight
+  ));
+  expect(overflowBeforeTyping).toBe(true);
+
+  const typeCount = pinyin.length - 1;
+  await page.keyboard.type(pinyin.slice(0, typeCount));
+  const currentIsVisible = await page.locator('.pinyin').evaluate((element) => {
+    const current = element.querySelector<HTMLElement>('.pinyin-letter.current');
+    if (!current) return false;
+    const promptBounds = element.getBoundingClientRect();
+    const currentBounds = current.getBoundingClientRect();
+    return currentBounds.top >= promptBounds.top && currentBounds.bottom <= promptBounds.bottom;
+  });
+
+  expect(currentIsVisible).toBe(true);
+  await expect(page.getByTestId('progress')).toHaveAttribute('data-progress', String(typeCount));
 });
