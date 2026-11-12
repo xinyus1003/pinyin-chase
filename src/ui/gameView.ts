@@ -7,11 +7,17 @@ export type GameViewCallbacks = {
 export function renderGameShell(root: HTMLElement): void {
   root.innerHTML = `
     <main class="screen game-screen" data-testid="game-screen">
-      <header class="hud">
-        <span>第 <strong data-testid="level">1</strong> 关</span>
-        <span data-testid="difficulty-label">简单</span>
-        <span>距离 <strong data-testid="gap">0</strong></span>
-        <button type="button" data-testid="mute">静音</button>
+      <header class="hud-wrap">
+        <div class="hud">
+          <span>第 <strong data-testid="level">1</strong> 关</span>
+          <span data-testid="difficulty-label">简单</span>
+          <span>距离 <strong data-testid="gap">0</strong></span>
+          <button type="button" data-testid="mute">静音</button>
+        </div>
+        <div class="hud-metrics">
+          <span>实时速度 <strong data-testid="cpm">0</strong> CPM</span>
+          <span>当前正确率 <strong data-testid="accuracy">—</strong></span>
+        </div>
       </header>
       <canvas data-testid="game-canvas"></canvas>
       <section class="prompt-card">

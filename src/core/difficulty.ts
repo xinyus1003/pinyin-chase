@@ -3,6 +3,7 @@ import type { Difficulty, DifficultyConfig } from '../types';
 export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
   easy: {
     label: '简单',
+    description: '适合第一次逃跑',
     enemySpeed: 1.4,
     speedPerLevel: 0.08,
     initialGap: 14,
@@ -12,6 +13,7 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
   },
   normal: {
     label: '普通',
+    description: '速度与弯道升级',
     enemySpeed: 2.2,
     speedPerLevel: 0.12,
     initialGap: 11,
@@ -21,12 +23,23 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
   },
   hard: {
     label: '困难',
+    description: '生僻长句与更快追兵',
     enemySpeed: 3,
     speedPerLevel: 0.16,
     initialGap: 8,
     startTier: 4,
     phraseOffset: 2,
     baseBends: 9,
+  },
+  extreme: {
+    label: '极限',
+    description: '最高速度、最长句子、最多弯道',
+    enemySpeed: 4.2,
+    speedPerLevel: 0.22,
+    initialGap: 6,
+    startTier: 5,
+    phraseOffset: 3,
+    baseBends: 13,
   },
 };
 

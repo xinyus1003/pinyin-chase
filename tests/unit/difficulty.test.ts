@@ -13,6 +13,8 @@ describe('difficulty curve', () => {
     expect(enemySpeedFor('easy', 3)).toBeCloseTo(1.56);
     expect(enemySpeedFor('normal', 4)).toBeCloseTo(2.56);
     expect(enemySpeedFor('hard', 6)).toBeCloseTo(3.8);
+    expect(enemySpeedFor('extreme', 1)).toBeCloseTo(4.2);
+    expect(enemySpeedFor('extreme', 3)).toBeCloseTo(4.64);
   });
 
   it('keeps sentence counts fixed by difficulty and caps phrase tier at five', () => {
@@ -25,12 +27,15 @@ describe('difficulty curve', () => {
     expect(phraseTierFor('hard', 1)).toBe(4);
     expect(phraseTierFor('easy', 17)).toBe(5);
     expect(phraseTierFor('hard', 99)).toBe(5);
+    expect(phraseCountFor('extreme', 1)).toBe(6);
+    expect(phraseTierFor('extreme', 1)).toBe(5);
   });
 
   it('increases bends for twelve levels with no further geometry growth', () => {
     expect(bendCountFor('easy', 1)).toBe(5);
     expect(bendCountFor('easy', 13)).toBe(17);
     expect(bendCountFor('easy', 30)).toBe(17);
+    expect(bendCountFor('extreme', 1)).toBe(13);
   });
 });
 

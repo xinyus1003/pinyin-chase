@@ -1,7 +1,8 @@
-export type Difficulty = 'easy' | 'normal' | 'hard';
+export type Difficulty = 'easy' | 'normal' | 'hard' | 'extreme';
 
 export type DifficultyConfig = {
   label: string;
+  description: string;
   enemySpeed: number;
   speedPerLevel: number;
   initialGap: number;
@@ -15,6 +16,12 @@ export interface RandomSource {
   integer(minInclusive: number, maxExclusive: number): number;
   pick<T>(items: readonly T[]): T;
 }
+
+export type DifficultyStats = {
+  bestCpm: number;
+  totalLetters: number;
+  correctLetters: number;
+};
 
 export interface Phrase {
   id: string;

@@ -10,17 +10,39 @@ class MemoryStorage implements StorageLike {
 describe('progress storage', () => {
   it('round-trips progress', () => {
     const storage = new MemoryStorage();
-    saveProgress({ bestLevel: 7, bestDistance: 88, lastDifficulty: 'hard', muted: true }, storage);
-    expect(loadProgress(storage)).toEqual({ bestLevel: 7, bestDistance: 88, lastDifficulty: 'hard', muted: true });
+    saveProgress({
+      bestLevel: 7,
+      bestDistance: 88,
+      lastDifficulty: 'extreme',
+      muted: true,
+      stats: {
+        easy: { bestCpm: 120, totalLetters: 400, correctLetters: 380 },
+        normal: { bestCpm: 150, totalLetters: 300, correctLetters: 260 },
+        hard: { bestCpm: 180, totalLetters: 200, correctLetters: 170 },
+        extreme: { bestCpm: 210, totalLetters: 100, correctLetters: 80 },
+      },
+    }, storage);
+    expect(loadProgress(storage)).toEqual({
+      bestLevel: 7,
+      bestDistance: 88,
+      lastDifficulty: 'extreme',
+      muted: true,
+      stats: {
+        easy: { bestCpm: 120, totalLetters: 400, correctLetters: 380 },
+        normal: { bestCpm: 150, totalLetters: 300, correctLetters: 260 },
+        hard: { bestCpm: 180, totalLetters: 200, correctLetters: 170 },
+        extreme: { bestCpm: 210, totalLetters: 100, correctLetters: 80 },
+      },
+    });
   });
 
   it('falls back to defaults on malformed data', () => {
     const storage = new MemoryStorage();
     storage.setItem('pinyin-chase:progress', '{bad json');
-    expect(loadProgress(storage)).toEqual({ bestLevel: 1, bestDistance: 0, lastDifficulty: 'easy', muted: false });
+    expect(loadProgress(storage)).toMatchObject({ bestLevel: 1, bestDistance: 0, lastDifficulty: 'easy', muted: false });
   });
 
   it('works when storage is unavailable', () => {
-    expect(loadProgress(undefined)).toEqual({ bestLevel: 1, bestDistance: 0, lastDifficulty: 'easy', muted: false });
+    expect(loadProgress(undefined)).toMatchObject({ bestLevel: 1, bestDistance: 0, lastDifficulty: 'easy', muted: false });
   });
 });

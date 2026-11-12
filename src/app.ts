@@ -12,6 +12,7 @@ import { CanvasRenderer } from './render/canvasRenderer';
 import { loadProgress, saveProgress, type PersistedProgress } from './core/storage';
 import { FeedbackController } from './audio/feedback';
 import { DIFFICULTIES } from './core/difficulty';
+import { TypingMetrics } from './core/typingMetrics';
 import {
   activeTensionForPhase,
   createBestDistanceTracker,
@@ -27,6 +28,8 @@ type GameElements = {
   level: HTMLElement;
   gap: HTMLElement;
   difficulty: HTMLElement;
+  cpm: HTMLElement;
+  accuracy: HTMLElement;
   reachedLevel: HTMLElement;
   progress: HTMLElement;
   prompt: HTMLElement;
@@ -54,6 +57,9 @@ export function bootstrap(root: HTMLElement): void {
   let lastPromptKey = '';
   let resizeObserver: ResizeObserver | null = null;
   let previousPhase: GameSnapshot['phase'] = 'playing';
+  let statsDirty = false;
+  let lastStatsSaveAt = 0;
+  const typingMetrics = new TypingMetrics();
   const feedback = new FeedbackController();
   feedback.setMuted(progress.muted);
   const levelTimer = createLevelClearTimer();
@@ -93,16 +99,56 @@ export function bootstrap(root: HTMLElement): void {
     return session;
   }
 
+  function recordStoredAttempt(kind: 'correct' | 'wrong'): void {
+    const current = progress.stats[selected];
+    progress = {
+      ...progress,
+      stats: {
+        ...progress.stats,
+        [selected]: {
+          ...current,
+          totalLetters: current.totalLetters + 1,
+          correctLetters: current.correctLetters + (kind === 'correct' ? 1 : 0),
+        },
+      },
+    };
+    statsDirty = true;
+  }
+
+  function saveStatsIfNeeded(now: number, force = false): void {
+    if (!statsDirty) return;
+    if (!force && now - lastStatsSaveAt < 1000) return;
+    saveProgress(progress);
+    statsDirty = false;
+    lastStatsSaveAt = now;
+  }
+
   function syncView(): void {
     if (!run.session || !gameElements) return;
     const snapshot = run.session.getSnapshot();
+    const now = performance.now();
+    const typing = typingMetrics.snapshot(now);
+    setText(gameElements.cpm, String(typing.cpm));
+    setText(gameElements.accuracy, typing.totalAttempts === 0 ? '—' : `${typing.accuracy.toFixed(1)}%`);
+    const currentStats = progress.stats[selected];
+    if (typingMetrics.canRecordBest(now) && typing.cpm > currentStats.bestCpm) {
+      progress = {
+        ...progress,
+        stats: {
+          ...progress.stats,
+          [selected]: { ...currentStats, bestCpm: typing.cpm },
+        },
+      };
+      statsDirty = true;
+    }
+    saveStatsIfNeeded(now);
     setText(gameElements.level, String(snapshot.level.number));
     setText(gameElements.gap, Math.max(0, snapshot.gap).toFixed(1));
     setText(gameElements.difficulty, DIFFICULTIES[snapshot.level.difficulty].label);
     setText(gameElements.reachedLevel, String(snapshot.level.number));
-    const progress = String(snapshot.heroLetters);
-    if (gameElements.progress.dataset.progress !== progress) {
-      gameElements.progress.dataset.progress = progress;
+    const progressValue = String(snapshot.heroLetters);
+    if (gameElements.progress.dataset.progress !== progressValue) {
+      gameElements.progress.dataset.progress = progressValue;
     }
     setText(gameElements.progress, `${snapshot.heroLetters} 字母`);
     const phrase = snapshot.level.phrases[snapshot.phraseIndex] ?? snapshot.level.phrases.at(-1)!;
@@ -131,12 +177,14 @@ export function bootstrap(root: HTMLElement): void {
         feedback.levelClear();
         renderer?.emitLevelClear();
         saveProgress(progress);
+        statsDirty = false;
         distanceTracker.flush();
         levelTimer.schedule(advanceLevel);
       } else if (phase === 'gameOver') {
         feedback.caught();
         renderer?.emitCaught();
         saveProgress(progress);
+        statsDirty = false;
         distanceTracker.flush();
         run.keyboard?.blur();
         root.querySelector<HTMLButtonElement>('[data-action="restart"]')?.focus({ preventScroll: true });
@@ -186,6 +234,7 @@ export function bootstrap(root: HTMLElement): void {
   function onFocusLost(): void {
     if (!run.session || focusLossAction(run.session.getSnapshot().phase) !== 'pause') return;
     run.session.pause();
+    typingMetrics.pause(performance.now());
     feedback.setTension(0);
     showPauseOverlay();
     syncAndTrigger();
@@ -196,6 +245,7 @@ export function bootstrap(root: HTMLElement): void {
     const action = visibilityAction(document.hidden, run.session.getSnapshot().phase);
     if (action === 'pause') {
       run.session.pause();
+      typingMetrics.pause(performance.now());
       // Background timers (the heartbeat) keep firing while rAF is throttled,
       // so explicitly silence feedback the moment the game is paused.
       feedback.setTension(0);
@@ -215,11 +265,16 @@ export function bootstrap(root: HTMLElement): void {
       stopCurrentRun(run);
       disposeRenderer();
       levelTimer.clear();
+      typingMetrics.reset();
+      statsDirty = false;
+      lastStatsSaveAt = 0;
       renderGameShell(root);
       gameElements = {
         level: root.querySelector<HTMLElement>('[data-testid="level"]')!,
         gap: root.querySelector<HTMLElement>('[data-testid="gap"]')!,
         difficulty: root.querySelector<HTMLElement>('[data-testid="difficulty-label"]')!,
+        cpm: root.querySelector<HTMLElement>('[data-testid="cpm"]')!,
+        accuracy: root.querySelector<HTMLElement>('[data-testid="accuracy"]')!,
         reachedLevel: root.querySelector<HTMLElement>('[data-testid="reached-level"]')!,
         progress: root.querySelector<HTMLElement>('[data-testid="progress"]')!,
         prompt: root.querySelector<HTMLElement>('[data-testid="prompt"]')!,
@@ -236,7 +291,10 @@ export function bootstrap(root: HTMLElement): void {
           for (const letter of letters) {
             if (!run.session) return;
             const outcome = run.session.typeLetter(letter);
+            const now = performance.now();
             if (outcome.kind === 'correct') {
+              typingMetrics.recordCorrect(now);
+              recordStoredAttempt('correct');
               feedback.correct();
               renderer?.emitCorrect();
               const distance = distanceTracker.record(run.session.getSnapshot().runLetters);
@@ -245,6 +303,8 @@ export function bootstrap(root: HTMLElement): void {
               }
               if (distance.shouldSave) saveProgress(progress);
             } else if (outcome.kind === 'wrong') {
+              typingMetrics.recordWrong(now);
+              recordStoredAttempt('wrong');
               wrongCount += 1;
               feedback.wrong();
               renderer?.emitWrong();
@@ -326,8 +386,9 @@ export function bootstrap(root: HTMLElement): void {
     stopCurrentRun(run);
     disposeRenderer();
     levelTimer.clear();
+    saveStatsIfNeeded(performance.now(), true);
     feedback.destroy();
-    renderMenu(root, progress.bestLevel, selected, (difficulty) => {
+    renderMenu(root, progress.bestLevel, progress.stats, selected, (difficulty) => {
       selected = difficulty;
       progress = { ...progress, lastDifficulty: difficulty };
       saveProgress(progress);
