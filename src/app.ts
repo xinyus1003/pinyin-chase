@@ -7,14 +7,29 @@ import { renderMenu } from './ui/menuView';
 import { bindGameOverButtons, renderGameShell } from './ui/gameView';
 import { isPromptError, wrongIndicator } from './ui/errorState';
 import { stopCurrentRun, type RunResources } from './core/runLifecycle';
-import type { Difficulty } from './types';
+import { CanvasRenderer } from './render/canvasRenderer';
+import type { Difficulty, GameSnapshot } from './types';
 
 export function bootstrap(root: HTMLElement): void {
   let selected: Difficulty = 'easy';
   let levelNumber = 1;
   let wrongCount = 0;
   let starting = false;
+  let renderer: CanvasRenderer | null = null;
+  let resizeObserver: ResizeObserver | null = null;
+  let viewportListener: (() => void) | null = null;
+  let previousPhase: GameSnapshot['phase'] = 'playing';
   const run: RunResources<GameSession, GameLoop, NativeKeyboard> = { loop: null, keyboard: null, session: null };
+
+  function disposeRenderer(): void {
+    resizeObserver?.disconnect();
+    resizeObserver = null;
+    if (viewportListener && window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', viewportListener);
+    }
+    viewportListener = null;
+    renderer = null;
+  }
 
   function syncView(): void {
     if (!run.session) return;
@@ -39,6 +54,17 @@ export function bootstrap(root: HTMLElement): void {
       ?.classList.toggle('has-error', isPromptError(snapshot.stunRemaining));
   }
 
+  function syncAndTrigger(): void {
+    if (!run.session) return;
+    syncView();
+    const snapshot = run.session.getSnapshot();
+    if (snapshot.phase !== previousPhase) {
+      if (snapshot.phase === 'levelClear') renderer?.emitLevelClear();
+      else if (snapshot.phase === 'gameOver') renderer?.emitCaught();
+      previousPhase = snapshot.phase;
+    }
+  }
+
   function startRun(): void {
     if (starting) return;
     starting = true;
@@ -47,9 +73,11 @@ export function bootstrap(root: HTMLElement): void {
       // previous rAF loop ticking the freshly replaced session, nor keep the
       // previous keyboard listeners alive.
       stopCurrentRun(run);
+      disposeRenderer();
       renderGameShell(root);
       levelNumber = 1;
       wrongCount = 0;
+      previousPhase = 'playing';
       run.session = new GameSession(createLevel(selected, levelNumber, Date.now()));
       const input = root.querySelector<HTMLInputElement>('[data-testid="native-input"]')!;
       run.keyboard = new NativeKeyboard(input, {
@@ -57,8 +85,12 @@ export function bootstrap(root: HTMLElement): void {
           for (const letter of letters) {
             if (!run.session) return;
             const outcome = run.session.typeLetter(letter);
-            if (outcome.kind === 'wrong') wrongCount += 1;
-            syncView();
+            if (outcome.kind === 'correct') renderer?.emitCorrect();
+            else if (outcome.kind === 'wrong') {
+              wrongCount += 1;
+              renderer?.emitWrong();
+            }
+            syncAndTrigger();
           }
         },
       });
@@ -66,14 +98,26 @@ export function bootstrap(root: HTMLElement): void {
         onRestart: restartRun,
         onChangeDifficulty: showMenu,
       });
+
+      const canvas = root.querySelector<HTMLCanvasElement>('[data-testid="game-canvas"]')!;
+      renderer = new CanvasRenderer(canvas);
+      resizeObserver = new ResizeObserver(() => renderer?.resize());
+      resizeObserver.observe(canvas);
+      viewportListener = () => renderer?.resize();
+      window.visualViewport?.addEventListener('resize', viewportListener);
+
       run.keyboard.focus();
-      syncView();
+      syncAndTrigger();
+      renderer?.render(run.session.getSnapshot(), performance.now());
       run.loop = new GameLoop(
         (dt) => {
           run.session?.tick(dt);
-          syncView();
+          syncAndTrigger();
         },
-        () => {},
+        (time) => {
+          if (!run.session) return;
+          renderer?.render(run.session.getSnapshot(), time);
+        },
       );
       run.loop.start();
     } finally {
@@ -98,6 +142,7 @@ export function bootstrap(root: HTMLElement): void {
 
   function showMenu(): void {
     stopCurrentRun(run);
+    disposeRenderer();
     renderMenu(root, 1, selected, (difficulty) => {
       selected = difficulty;
       showMenu();

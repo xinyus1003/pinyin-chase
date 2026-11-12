@@ -31,3 +31,18 @@ test('wrong input stalls progress and shows a visible error state', async ({ pag
   await expect(wrongCount).toContainText('错误');
   await expect(wrongCount).toHaveAttribute('data-count', '1');
 });
+
+test('renders a non-empty canvas maze', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+  await page.waitForTimeout(200);
+  const hasPixels = await page.getByTestId('game-canvas').evaluate((canvas) => {
+    const element = canvas as HTMLCanvasElement;
+    const context = element.getContext('2d');
+    if (!context) return false;
+    const data = context.getImageData(0, 0, element.width, element.height).data;
+    for (let i = 3; i < data.length; i += 400) if (data[i] !== 0) return true;
+    return false;
+  });
+  expect(hasPixels).toBe(true);
+});
