@@ -24,11 +24,23 @@ describe('phrase bank', () => {
     }
   });
 
-  it('provides normalized pinyin for every phrase', () => {
+  it('provides normalized pinyin for full-sentence prompts', () => {
     for (const phrase of PHRASE_BANK) {
       expect(normalizePinyin(phrase.pinyin).length).toBeGreaterThan(0);
-      expect(phrase.zh.length).toBeGreaterThan(0);
+      expect(phrase.zh.length).toBeGreaterThanOrEqual(10);
+      expect(phrase.zh).toMatch(/[，。！？；]/);
     }
+  });
+
+  it('gets longer on average in each tier', () => {
+    const average = (tier: 1 | 2 | 3 | 4 | 5) => {
+      const items = PHRASE_BANK.filter((phrase) => phrase.tier === tier);
+      return items.reduce((sum, phrase) => sum + phrase.zh.length, 0) / items.length;
+    };
+    expect(average(1)).toBeLessThan(average(2));
+    expect(average(2)).toBeLessThan(average(3));
+    expect(average(3)).toBeLessThan(average(4));
+    expect(average(4)).toBeLessThan(average(5));
   });
 });
 
@@ -38,10 +50,10 @@ describe('selectPhrases', () => {
     const second = selectPhrases('hard', 1, createRng(123));
     expect(first.map((phrase) => phrase.zh)).toEqual(second.map((phrase) => phrase.zh));
     expect(first).toHaveLength(5);
-    expect(first.every((phrase) => phrase.tier === 3)).toBe(true);
+    expect(first.every((phrase) => phrase.tier === 4)).toBe(true);
   });
 
-  it('composes longer phrases at higher levels', () => {
+  it('selects longer sentences at higher levels', () => {
     const early = selectPhrases('easy', 1, createRng(5));
     const late = selectPhrases('easy', 13, createRng(5));
     const earlyAverage = early.reduce((sum, p) => sum + normalizePinyin(p.pinyin).length, 0) / early.length;
@@ -51,10 +63,10 @@ describe('selectPhrases', () => {
 });
 
 describe('hint uses v for ü', () => {
-  it('stores 绿灯 as lv and never lü', () => {
-    const greenLight = PHRASE_BANK.find((phrase) => phrase.zh === '绿灯');
-    expect(greenLight).toBeDefined();
-    expect(greenLight!.pinyin).toContain('lv');
-    expect(greenLight!.pinyin).not.toContain('lü');
+  it('uses lv and never lü in sentence hints containing 绿', () => {
+    const greenSentence = PHRASE_BANK.find((phrase) => phrase.zh.includes('绿'));
+    expect(greenSentence).toBeDefined();
+    expect(greenSentence!.pinyin).toContain('lv');
+    expect(greenSentence!.pinyin).not.toContain('lü');
   });
 });

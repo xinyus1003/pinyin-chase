@@ -5,7 +5,7 @@ export type DifficultyConfig = {
   enemySpeed: number;
   speedPerLevel: number;
   initialGap: number;
-  startTier: 1 | 2 | 3;
+  startTier: 1 | 2 | 3 | 4 | 5;
   phraseOffset: number;
   baseBends: number;
 };

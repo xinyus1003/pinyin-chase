@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   bendCountFor,
-  composeCountFor,
   enemySpeedFor,
   phraseCountFor,
   phraseTierFor,
@@ -16,10 +15,14 @@ describe('difficulty curve', () => {
     expect(enemySpeedFor('hard', 6)).toBeCloseTo(3.8);
   });
 
-  it('increases sentence count and caps phrase tier at five', () => {
+  it('keeps sentence counts fixed by difficulty and caps phrase tier at five', () => {
     expect(phraseCountFor('easy', 1)).toBe(3);
+    expect(phraseCountFor('easy', 20)).toBe(3);
+    expect(phraseCountFor('normal', 20)).toBe(4);
     expect(phraseCountFor('hard', 1)).toBe(5);
+    expect(phraseCountFor('hard', 20)).toBe(5);
     expect(phraseTierFor('easy', 1)).toBe(1);
+    expect(phraseTierFor('hard', 1)).toBe(4);
     expect(phraseTierFor('easy', 17)).toBe(5);
     expect(phraseTierFor('hard', 99)).toBe(5);
   });
@@ -28,13 +31,6 @@ describe('difficulty curve', () => {
     expect(bendCountFor('easy', 1)).toBe(5);
     expect(bendCountFor('easy', 13)).toBe(17);
     expect(bendCountFor('easy', 30)).toBe(17);
-  });
-
-  it('combines base phrases into longer sentences over time', () => {
-    expect(composeCountFor(1)).toBe(1);
-    expect(composeCountFor(7)).toBe(2);
-    expect(composeCountFor(13)).toBe(3);
-    expect(composeCountFor(99)).toBe(3);
   });
 });
 

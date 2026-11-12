@@ -1,7 +1,7 @@
 import { pinyin } from 'pinyin-pro';
 import { PHRASE_TEXTS } from '../data/phraseTexts';
 import type { Difficulty, Phrase, RandomSource } from '../types';
-import { composeCountFor, phraseCountFor, phraseTierFor } from './difficulty';
+import { phraseCountFor, phraseTierFor } from './difficulty';
 
 function makePhrase(zh: string, tier: 1 | 2 | 3 | 4 | 5): Phrase {
   const pinyinText = pinyin(zh, { toneType: 'none', type: 'array', v: true }).join(' ');
@@ -35,14 +35,5 @@ function takeWithReshuffle(pool: readonly Phrase[], count: number, rng: RandomSo
 export function selectPhrases(difficulty: Difficulty, level: number, rng: RandomSource): Phrase[] {
   const tier = phraseTierFor(difficulty, level);
   const pool = PHRASE_BANK.filter((phrase) => phrase.tier === tier);
-  const phraseCount = phraseCountFor(difficulty, level);
-  const composeCount = composeCountFor(level);
-  const baseItems = takeWithReshuffle(pool, phraseCount * composeCount, rng);
-  const result: Phrase[] = [];
-  for (let i = 0; i < phraseCount; i += 1) {
-    const group = baseItems.slice(i * composeCount, (i + 1) * composeCount);
-    const zh = group.map((phrase) => phrase.zh).join('，');
-    result.push(makePhrase(zh, tier));
-  }
-  return result;
+  return takeWithReshuffle(pool, phraseCountFor(difficulty, level), rng);
 }

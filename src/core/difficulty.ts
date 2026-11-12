@@ -24,7 +24,7 @@ export const DIFFICULTIES: Record<Difficulty, DifficultyConfig> = {
     enemySpeed: 3,
     speedPerLevel: 0.16,
     initialGap: 8,
-    startTier: 3,
+    startTier: 4,
     phraseOffset: 2,
     baseBends: 9,
   },
@@ -35,9 +35,8 @@ export function enemySpeedFor(difficulty: Difficulty, level: number): number {
   return config.enemySpeed + Math.max(0, level - 1) * config.speedPerLevel;
 }
 
-export function phraseCountFor(difficulty: Difficulty, level: number): number {
-  const config = DIFFICULTIES[difficulty];
-  return 3 + config.phraseOffset + Math.floor(Math.max(0, level - 1) / 2);
+export function phraseCountFor(difficulty: Difficulty, _level: number): number {
+  return 3 + DIFFICULTIES[difficulty].phraseOffset;
 }
 
 export function phraseTierFor(difficulty: Difficulty, level: number): 1 | 2 | 3 | 4 | 5 {
@@ -50,6 +49,3 @@ export function bendCountFor(difficulty: Difficulty, level: number): number {
   return DIFFICULTIES[difficulty].baseBends + Math.min(Math.max(0, level - 1), 12);
 }
 
-export function composeCountFor(level: number): number {
-  return 1 + Math.min(2, Math.floor(Math.max(0, level - 1) / 6));
-}
