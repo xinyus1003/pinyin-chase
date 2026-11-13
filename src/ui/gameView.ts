@@ -10,6 +10,9 @@ export function renderGameShell(root: HTMLElement): void {
   root.innerHTML = `
     <main class="screen game-screen" data-testid="game-screen">
       <canvas data-testid="game-canvas"></canvas>
+      <div class="danger-vignette" data-testid="danger-vignette" data-level="0" aria-hidden="true">
+        <span class="danger-warning">危险逼近</span>
+      </div>
       <header class="hud-wrap">
         <div class="hud">
           <div class="hud-status">
@@ -25,6 +28,9 @@ export function renderGameShell(root: HTMLElement): void {
         <div class="hud-metrics">
           <span>速度 <strong data-testid="cpm">0</strong> CPM</span>
           <span>正确率 <strong data-testid="accuracy">—</strong></span>
+          <span class="ghost-metric" data-testid="ghost-metric" hidden>
+            最佳幽灵 <strong data-testid="ghost-progress">—</strong>
+          </span>
         </div>
       </header>
       <section class="prompt-card">

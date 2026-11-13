@@ -56,3 +56,29 @@ export function drawEnemy(
   ctx.fill();
   ctx.restore();
 }
+
+export function drawGhost(ctx: CanvasRenderingContext2D, time: number, animate = true): void {
+  const drift = animate ? Math.sin(time / 120) * 2 : 0;
+  ctx.save();
+  ctx.translate(0, drift);
+  ctx.globalAlpha = 0.2;
+  ctx.fillStyle = '#32e6d4';
+  ctx.shadowColor = '#32e6d4';
+  ctx.shadowBlur = 18;
+  ctx.beginPath();
+  ctx.roundRect(-10, -2, 20, 20, 8);
+  ctx.fill();
+  ctx.globalAlpha = 0.46;
+  ctx.fillStyle = '#fff6d8';
+  ctx.beginPath();
+  ctx.arc(0, -10, 9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 0.62;
+  ctx.strokeStyle = '#32e6d4';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.arc(0, 0, 23, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}

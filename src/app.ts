@@ -14,18 +14,22 @@ import { loadProgress, saveProgress, type PersistedProgress } from './core/stora
 import { FeedbackController } from './audio/feedback';
 import { DIFFICULTIES } from './core/difficulty';
 import { TypingMetrics } from './core/typingMetrics';
+import { GhostRecorder, ghostLettersAt, shouldReplaceGhost, type GhostLevelRecord } from './core/ghost';
 import {
   activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
+  dangerLevelForPhase,
   focusLossAction,
   nextLevelNumber,
   visibilityAction,
+  type DangerLevel,
 } from './core/runFlow';
 import { REDUCED_MOTION_QUERY } from './render/motion';
 import type { Difficulty, GameSnapshot } from './types';
 
 type GameElements = {
+  screen: HTMLElement;
   level: HTMLElement;
   gap: HTMLElement;
   difficulty: HTMLElement;
@@ -37,6 +41,9 @@ type GameElements = {
   gameOver: HTMLElement;
   wrong: HTMLElement;
   promptCard: HTMLElement;
+  danger: HTMLElement;
+  ghostMetric: HTMLElement;
+  ghostProgress: HTMLElement;
 };
 
 function setText(element: HTMLElement, value: string): void {
@@ -58,9 +65,12 @@ export function bootstrap(root: HTMLElement): void {
   let lastPromptKey = '';
   let resizeObserver: ResizeObserver | null = null;
   let previousPhase: GameSnapshot['phase'] = 'playing';
+  let lastDangerLevel: DangerLevel = 0;
   let statsDirty = false;
   let lastStatsSaveAt = 0;
+  let ghostLevelStartActiveMs = 0;
   const typingMetrics = new TypingMetrics();
+  const ghostRecorder = new GhostRecorder();
   const feedback = new FeedbackController();
   feedback.setMuted(progress.muted);
   const levelTimer = createLevelClearTimer();
@@ -93,12 +103,28 @@ export function bootstrap(root: HTMLElement): void {
   function startSession(): GameSession {
     const session = new GameSession(createLevel(selected, levelNumber, Date.now()));
     run.session = session;
+    ghostRecorder.beginLevel(levelNumber, ghostLevelStartActiveMs);
     wrongCount = 0;
     lastPromptKey = '';
     previousPhase = 'playing';
     progress = { ...progress, bestLevel: Math.max(progress.bestLevel, levelNumber) };
     saveProgress(progress);
     return session;
+  }
+
+  function saveGhostIfBest(): void {
+    if (ghostRecorder.totalLetters <= 0) return;
+    const candidate = ghostRecorder.snapshot();
+    if (!shouldReplaceGhost(candidate, progress.ghosts[selected])) return;
+    progress = {
+      ...progress,
+      ghosts: { ...progress.ghosts, [selected]: candidate },
+    };
+    saveProgress(progress);
+  }
+
+  function currentGhostLevel(level: number): GhostLevelRecord | null {
+    return progress.ghosts[selected]?.levels.find((record) => record.level === level) ?? null;
   }
 
   function recordStoredAttempt(kind: 'correct' | 'wrong'): void {
@@ -165,6 +191,19 @@ export function bootstrap(root: HTMLElement): void {
     setText(gameElements.wrong, indicator.label);
     gameElements.wrong.dataset.count = String(wrongCount);
     gameElements.promptCard.classList.toggle('has-error', isPromptError(snapshot.stunRemaining));
+
+    const dangerLevel = dangerLevelForPhase(snapshot.phase, snapshot.gap);
+    gameElements.danger.dataset.level = String(dangerLevel);
+    gameElements.screen.dataset.danger = String(dangerLevel);
+    if (dangerLevel !== 0 && dangerLevel > lastDangerLevel) feedback.dangerWarning(dangerLevel);
+    lastDangerLevel = dangerLevel;
+
+    const ghostLevel = currentGhostLevel(snapshot.level.number);
+    const ghostElapsedMs = Math.max(0, typingMetrics.activeElapsedMs(now) - ghostLevelStartActiveMs);
+    const ghostLetters = ghostLevel ? ghostLettersAt(ghostLevel.timesMs, ghostElapsedMs) : null;
+    renderer?.setGhost(ghostLetters);
+    setHidden(gameElements.ghostMetric, ghostLevel === null);
+    setText(gameElements.ghostProgress, ghostLetters === null ? '—' : String(ghostLetters));
     syncRendererSafeArea();
   }
 
@@ -189,6 +228,7 @@ export function bootstrap(root: HTMLElement): void {
       if (phase === 'levelClear') {
         feedback.levelClear();
         renderer?.emitLevelClear();
+        saveGhostIfBest();
         saveProgress(progress);
         statsDirty = false;
         distanceTracker.flush();
@@ -196,6 +236,7 @@ export function bootstrap(root: HTMLElement): void {
       } else if (phase === 'gameOver') {
         feedback.caught();
         renderer?.emitCaught();
+        saveGhostIfBest();
         saveProgress(progress);
         statsDirty = false;
         distanceTracker.flush();
@@ -211,6 +252,7 @@ export function bootstrap(root: HTMLElement): void {
     const nextLevel = nextLevelNumber(run.session.getSnapshot().phase, levelNumber);
     if (nextLevel === null) return;
     levelNumber = nextLevel;
+    ghostLevelStartActiveMs = typingMetrics.activeElapsedMs(performance.now());
     const session = startSession();
     renderer?.resetLevel(session.getSnapshot());
     if (document.hidden) {
@@ -237,6 +279,7 @@ export function bootstrap(root: HTMLElement): void {
   function activateGameSurface(): void {
     feedback.unlock();
     if (run.session?.getSnapshot().phase === 'paused') {
+      typingMetrics.resume(performance.now());
       run.session.resume();
       hidePauseOverlay();
       syncAndTrigger();
@@ -289,6 +332,7 @@ export function bootstrap(root: HTMLElement): void {
     if (starting) return;
     starting = true;
     try {
+      if (run.session) saveGhostIfBest();
       // Unconditional, idempotent cleanup: a restart must never leave the
       // previous rAF loop ticking the freshly replaced session, nor keep the
       // previous keyboard listeners alive.
@@ -296,10 +340,14 @@ export function bootstrap(root: HTMLElement): void {
       disposeRenderer();
       levelTimer.clear();
       typingMetrics.reset();
+      ghostRecorder.reset();
+      ghostLevelStartActiveMs = 0;
+      lastDangerLevel = 0;
       statsDirty = false;
       lastStatsSaveAt = 0;
       renderGameShell(root);
       gameElements = {
+        screen: root.querySelector<HTMLElement>('[data-testid="game-screen"]')!,
         level: root.querySelector<HTMLElement>('[data-testid="level"]')!,
         gap: root.querySelector<HTMLElement>('[data-testid="gap"]')!,
         difficulty: root.querySelector<HTMLElement>('[data-testid="difficulty-label"]')!,
@@ -311,6 +359,9 @@ export function bootstrap(root: HTMLElement): void {
         gameOver: root.querySelector<HTMLElement>('[data-testid="game-over"]')!,
         wrong: root.querySelector<HTMLElement>('[data-testid="wrong-count"]')!,
         promptCard: root.querySelector<HTMLElement>('.prompt-card')!,
+        danger: root.querySelector<HTMLElement>('[data-testid="danger-vignette"]')!,
+        ghostMetric: root.querySelector<HTMLElement>('[data-testid="ghost-metric"]')!,
+        ghostProgress: root.querySelector<HTMLElement>('[data-testid="ghost-progress"]')!,
       };
       levelNumber = 1;
       const session = startSession();
@@ -324,6 +375,7 @@ export function bootstrap(root: HTMLElement): void {
             const now = performance.now();
             if (outcome.kind === 'correct') {
               typingMetrics.recordCorrect(now);
+              ghostRecorder.recordCorrect(typingMetrics.activeElapsedMs(now));
               recordStoredAttempt('correct');
               feedback.correct();
               renderer?.emitCorrect();
@@ -419,9 +471,13 @@ export function bootstrap(root: HTMLElement): void {
   }
 
   function showMenu(): void {
+    saveGhostIfBest();
     stopCurrentRun(run);
     disposeRenderer();
     levelTimer.clear();
+    ghostRecorder.reset();
+    ghostLevelStartActiveMs = 0;
+    lastDangerLevel = 0;
     saveStatsIfNeeded(performance.now(), true);
     feedback.destroy();
     renderMenu(root, progress.bestLevel, progress.stats, selected, (difficulty) => {

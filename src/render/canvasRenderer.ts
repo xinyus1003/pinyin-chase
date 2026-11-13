@@ -1,7 +1,7 @@
 import type { GameSnapshot } from '../types';
 import { LETTER_WORLD_STEP, sampleMaze } from '../core/maze';
 import { Camera } from './camera';
-import { drawEnemy, drawHero } from './characters';
+import { drawEnemy, drawGhost, drawHero } from './characters';
 import { motionPolicy, prefersReducedMotion, type MotionPolicy } from './motion';
 import { focusYForSafeArea, type SafeArea } from './safeArea';
 
@@ -18,6 +18,7 @@ export class CanvasRenderer {
   private visualHeroDistance: number | null = null;
   private mazePath: { key: string; path: Path2D } | null = null;
   private safeArea: SafeArea = { top: 0, bottom: 0 };
+  private ghostLetters: number | null = null;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -40,6 +41,12 @@ export class CanvasRenderer {
 
   setSafeArea(top: number, bottom: number): void {
     this.safeArea = { top, bottom };
+  }
+
+  setGhost(letters: number | null): void {
+    this.ghostLetters = letters === null || !Number.isFinite(letters)
+      ? null
+      : Math.max(0, Math.floor(letters));
   }
 
   emitCorrect(): void {
@@ -97,6 +104,19 @@ export class CanvasRenderer {
 
     this.drawMaze(snapshot);
     this.drawGate(snapshot);
+
+    if (this.ghostLetters !== null) {
+      const ghostLetters = Math.min(snapshot.level.letters.length, this.ghostLetters);
+      const ghost = sampleMaze(
+        snapshot.level.maze,
+        snapshot.level.maze.heroStartDistance + ghostLetters * LETTER_WORLD_STEP,
+      );
+      ctx.save();
+      ctx.translate(ghost.x, ghost.y);
+      ctx.rotate(ghost.angle);
+      drawGhost(ctx, time, this.motion.animateCharacters);
+      ctx.restore();
+    }
 
     const enemy = sampleMaze(snapshot.level.maze, hero.distance - snapshot.gap * LETTER_WORLD_STEP);
     ctx.save();

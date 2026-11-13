@@ -67,6 +67,11 @@ export class FeedbackController {
     this.vibrate([40, 40, 80]);
   }
 
+  dangerWarning(level: 1 | 2 | 3): void {
+    this.tone(200 + level * 80, 0.07 + level * 0.015, 'square', 0.055);
+    this.vibrate([8 + level * 2, 8 + level * 2, 8 + level * 2]);
+  }
+
   setTension(value: number): void {
     this.tension = Math.max(0, Math.min(1, value));
     // Zero proximity tension means the heartbeat is no longer meaningful; stop

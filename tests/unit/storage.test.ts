@@ -21,6 +21,12 @@ describe('progress storage', () => {
         hard: { bestCpm: 180, totalLetters: 200, correctLetters: 170 },
         extreme: { bestCpm: 210, totalLetters: 100, correctLetters: 80 },
       },
+      ghosts: {
+        easy: { totalLetters: 42, levels: [{ level: 1, timesMs: [100, 260] }] },
+        normal: null,
+        hard: { totalLetters: 75, levels: [{ level: 1, timesMs: [90, 180, 300] }] },
+        extreme: null,
+      },
     }, storage);
     expect(loadProgress(storage)).toEqual({
       bestLevel: 7,
@@ -33,6 +39,12 @@ describe('progress storage', () => {
         hard: { bestCpm: 180, totalLetters: 200, correctLetters: 170 },
         extreme: { bestCpm: 210, totalLetters: 100, correctLetters: 80 },
       },
+      ghosts: {
+        easy: { totalLetters: 42, levels: [{ level: 1, timesMs: [100, 260] }] },
+        normal: null,
+        hard: { totalLetters: 75, levels: [{ level: 1, timesMs: [90, 180, 300] }] },
+        extreme: null,
+      },
     });
   });
 
@@ -40,6 +52,22 @@ describe('progress storage', () => {
     const storage = new MemoryStorage();
     storage.setItem('pinyin-chase:progress', '{bad json');
     expect(loadProgress(storage)).toMatchObject({ bestLevel: 1, bestDistance: 0, lastDifficulty: 'easy', muted: false });
+  });
+
+  it('sanitizes malformed ghost timelines without breaking existing progress', () => {
+    const storage = new MemoryStorage();
+    storage.setItem('pinyin-chase:progress', JSON.stringify({
+      bestLevel: 4,
+      ghosts: {
+        easy: { totalLetters: 9, levels: [{ level: 1, timesMs: [100, -5, Number.NaN, 240] }] },
+        hard: { totalLetters: 'bad', levels: 'bad' },
+      },
+      stats: {},
+    }));
+
+    const progress = loadProgress(storage);
+    expect(progress.ghosts.easy).toEqual({ totalLetters: 9, levels: [{ level: 1, timesMs: [100, 240] }] });
+    expect(progress.ghosts.hard).toBeNull();
   });
 
   it('works when storage is unavailable', () => {

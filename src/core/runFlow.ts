@@ -105,6 +105,16 @@ export function activeTensionForPhase(phase: GamePhase, gap: number, initialGap:
   return Math.max(0, Math.min(1, 1 - gap / initialGap));
 }
 
+export type DangerLevel = 0 | 1 | 2 | 3;
+
+/** Escalating visual warning for the final four letters of distance. */
+export function dangerLevelForPhase(phase: GamePhase, gap: number): DangerLevel {
+  if (phase !== 'playing' || !Number.isFinite(gap) || gap > 4) return 0;
+  if (gap <= 1) return 3;
+  if (gap <= 2.5) return 2;
+  return 1;
+}
+
 /**
  * Only a cleared level advances the run, so duplicate timers or stale phases
  * can never skip a level.

@@ -1,4 +1,5 @@
 import type { Difficulty, DifficultyStats } from '../types';
+import type { GhostLevelRecord, GhostRunRecord } from './ghost';
 
 export type StorageLike = Pick<Storage, 'getItem' | 'setItem'>;
 
@@ -8,6 +9,7 @@ export type PersistedProgress = {
   lastDifficulty: Difficulty;
   muted: boolean;
   stats: Record<Difficulty, DifficultyStats>;
+  ghosts: Record<Difficulty, GhostRunRecord | null>;
 };
 
 const KEY = 'pinyin-chase:progress';
@@ -22,6 +24,10 @@ function emptyStats(): Record<Difficulty, DifficultyStats> {
   };
 }
 
+function emptyGhosts(): Record<Difficulty, GhostRunRecord | null> {
+  return { easy: null, normal: null, hard: null, extreme: null };
+}
+
 function defaultProgress(): PersistedProgress {
   return {
     bestLevel: 1,
@@ -29,6 +35,7 @@ function defaultProgress(): PersistedProgress {
     lastDifficulty: 'easy',
     muted: false,
     stats: emptyStats(),
+    ghosts: emptyGhosts(),
   };
 }
 
@@ -54,6 +61,36 @@ function normalizeStats(value: unknown): Record<Difficulty, DifficultyStats> {
   return result;
 }
 
+function normalizeGhost(value: unknown): GhostRunRecord | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const totalLetters = Math.floor(finiteNonNegative(record.totalLetters));
+  if (totalLetters <= 0 || !Array.isArray(record.levels)) return null;
+
+  const levels: GhostLevelRecord[] = [];
+  for (const rawLevel of record.levels) {
+    if (!rawLevel || typeof rawLevel !== 'object') continue;
+    const levelRecord = rawLevel as Record<string, unknown>;
+    const level = Math.floor(finiteNonNegative(levelRecord.level));
+    if (level <= 0 || !Array.isArray(levelRecord.timesMs)) continue;
+    const timesMs = levelRecord.timesMs
+      .filter((time): time is number => typeof time === 'number' && Number.isFinite(time) && time >= 0)
+      .map((time) => Math.round(time))
+      .sort((a, b) => a - b);
+    levels.push({ level, timesMs });
+  }
+  return levels.length > 0 ? { totalLetters, levels } : null;
+}
+
+function normalizeGhosts(value: unknown): Record<Difficulty, GhostRunRecord | null> {
+  const result = emptyGhosts();
+  if (!value || typeof value !== 'object') return result;
+  for (const difficulty of DIFFICULTIES) {
+    result[difficulty] = normalizeGhost((value as Record<string, unknown>)[difficulty]);
+  }
+  return result;
+}
+
 function resolveStorage(storage?: StorageLike): StorageLike | undefined {
   if (storage) return storage;
   try {
@@ -75,6 +112,7 @@ export function loadProgress(storage?: StorageLike): PersistedProgress {
       lastDifficulty: difficulty === 'normal' || difficulty === 'hard' || difficulty === 'extreme' ? difficulty : 'easy',
       muted: value.muted === true,
       stats: normalizeStats(value.stats),
+      ghosts: normalizeGhosts(value.ghosts),
     };
   } catch {
     return defaultProgress();

@@ -175,6 +175,22 @@ describe('FeedbackController', () => {
     controller.destroy();
   });
 
+  it('plays a stronger warning cue as danger rises', () => {
+    const { context, oscillators } = makeContext();
+    const vibrate = vi.fn();
+    const controller = new FeedbackController(() => asAudioContext(context), vibrate);
+    controller.unlock();
+
+    controller.dangerWarning(2);
+    expect(oscillators[0]!.frequency.setValueAtTime).toHaveBeenCalledWith(360, 0);
+    expect(vibrate).toHaveBeenCalledWith([12, 12, 12]);
+
+    controller.dangerWarning(3);
+    expect(oscillators[1]!.frequency.setValueAtTime).toHaveBeenCalledWith(440, 0);
+    expect(vibrate).toHaveBeenLastCalledWith([14, 14, 14]);
+    controller.destroy();
+  });
+
   it('unlock falls back silently when the Web Audio API is unavailable', () => {
     const controller = new FeedbackController(() => {
       throw new Error('AudioContext unavailable');

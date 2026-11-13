@@ -74,6 +74,62 @@ test('hard mode without input reaches game over', async ({ page }) => {
   await expect(page.getByRole('button', { name: '再来一次' })).toBeVisible();
 });
 
+test('escalates danger feedback when the enemy enters the final letters', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '困难' }).click();
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+
+  const danger = page.getByTestId('danger-vignette');
+  await expect(danger).toBeAttached();
+  await expect.poll(async () => Number(await danger.getAttribute('data-level')), { timeout: 5000 }).toBeGreaterThan(0);
+});
+
+test('loads a personal best ghost from local progress', async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('pinyin-chase:progress', JSON.stringify({
+      bestLevel: 3,
+      bestDistance: 40,
+      lastDifficulty: 'easy',
+      muted: false,
+      stats: {
+        easy: { bestCpm: 80, totalLetters: 20, correctLetters: 19 },
+        normal: { bestCpm: 0, totalLetters: 0, correctLetters: 0 },
+        hard: { bestCpm: 0, totalLetters: 0, correctLetters: 0 },
+        extreme: { bestCpm: 0, totalLetters: 0, correctLetters: 0 },
+      },
+      ghosts: {
+        easy: { totalLetters: 20, levels: [{ level: 1, timesMs: [0, 200, 400, 600] }] },
+        normal: null,
+        hard: null,
+        extreme: null,
+      },
+    }));
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+
+  await expect(page.getByTestId('ghost-metric')).toBeVisible();
+  await expect(page.getByTestId('ghost-progress')).not.toHaveText('—');
+});
+
+test('saves a new personal ghost after a run ends', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '困难' }).click();
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+  const pinyin = await page.getByTestId('prompt').getAttribute('data-pinyin');
+  const firstLetter = (pinyin ?? '').toLowerCase().match(/[a-z]/)?.[0];
+  expect(firstLetter).toBeTruthy();
+  await page.keyboard.press(firstLetter!);
+
+  await expect(page.getByTestId('game-over')).toBeVisible({ timeout: 6000 });
+  const ghost = await page.evaluate(() => {
+    const raw = localStorage.getItem('pinyin-chase:progress');
+    return raw ? JSON.parse(raw).ghosts?.hard : null;
+  });
+  expect(ghost?.totalLetters).toBeGreaterThan(0);
+  expect(ghost?.levels?.[0]?.timesMs?.length).toBeGreaterThan(0);
+});
+
 test('supports a phone viewport and a mute toggle', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');

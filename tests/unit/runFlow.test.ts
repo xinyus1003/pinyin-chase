@@ -3,6 +3,7 @@ import {
   activeTensionForPhase,
   createBestDistanceTracker,
   createLevelClearTimer,
+  dangerLevelForPhase,
   focusLossAction,
   nextLevelNumber,
   visibilityAction,
@@ -157,5 +158,21 @@ describe('active tension policy', () => {
     expect(activeTensionForPhase('playing', 25, 10)).toBe(0);
     expect(activeTensionForPhase('playing', 0, 0)).toBe(0);
     expect(activeTensionForPhase('playing', 0, Number.NaN)).toBe(0);
+  });
+});
+
+describe('danger level policy', () => {
+  it('escalates as the enemy enters the final four letters', () => {
+    expect(dangerLevelForPhase('playing', 4.1)).toBe(0);
+    expect(dangerLevelForPhase('playing', 4)).toBe(1);
+    expect(dangerLevelForPhase('playing', 2.5)).toBe(2);
+    expect(dangerLevelForPhase('playing', 1)).toBe(3);
+  });
+
+  it('is inactive outside an active chase and clamps invalid gaps', () => {
+    expect(dangerLevelForPhase('paused', 0)).toBe(0);
+    expect(dangerLevelForPhase('gameOver', 0)).toBe(0);
+    expect(dangerLevelForPhase('playing', Number.NaN)).toBe(0);
+    expect(dangerLevelForPhase('playing', -2)).toBe(3);
   });
 });
