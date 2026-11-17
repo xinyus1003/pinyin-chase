@@ -28,6 +28,8 @@ export interface Phrase {
   zh: string;
   pinyin: string;
   tier: 1 | 2 | 3 | 4 | 5;
+  title?: string;
+  author?: string;
 }
 
 export interface PathSample {

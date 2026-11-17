@@ -6,6 +6,7 @@ const source = fs.readFileSync('src/data/phraseTexts.ts', 'utf8')
   .replace(/ as const;\s*$/, ';');
 new Function(source)();
 const texts = globalThis.PHRASE_TEXTS;
+const literary = JSON.parse(fs.readFileSync('src/data/literaryPhrases.json', 'utf8'));
 const items = [];
 for (const tier of [1, 2, 3, 4, 5]) {
   for (const zh of texts[tier]) {
@@ -14,6 +15,16 @@ for (const tier of [1, 2, 3, 4, 5]) {
       zh,
       pinyin: pinyin(zh, { toneType: 'none', type: 'array', v: true }).join(' '),
       tier,
+    });
+  }
+  for (const entry of literary.filter((item) => item.tier === tier)) {
+    items.push({
+      id: `${tier}:${entry.zh}`,
+      zh: entry.zh,
+      pinyin: pinyin(entry.zh, { toneType: 'none', type: 'array', v: true }).join(' '),
+      tier,
+      title: entry.title,
+      author: entry.author,
     });
   }
 }

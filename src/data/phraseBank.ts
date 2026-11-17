@@ -146,6 +146,38 @@ export const PHRASE_BANK: Phrase[] = [
     "tier": 1
   },
   {
+    "id": "1:燕子去了，有再来的时候；",
+    "zh": "燕子去了，有再来的时候；",
+    "pinyin": "yan zi qu le ， you zai lai de shi hou ；",
+    "tier": 1,
+    "title": "匆匆",
+    "author": "朱自清"
+  },
+  {
+    "id": "1:一株是枣树，还有一株也是枣树。",
+    "zh": "一株是枣树，还有一株也是枣树。",
+    "pinyin": "yi zhu shi zao shu ， hai you yi zhu ye shi zao shu 。",
+    "tier": 1,
+    "title": "秋夜",
+    "author": "鲁迅"
+  },
+  {
+    "id": "1:花生的好处很多，有一样最可贵。",
+    "zh": "花生的好处很多，有一样最可贵。",
+    "pinyin": "hua sheng de hao chu hen duo ， you yi yang zui ke gui 。",
+    "tier": 1,
+    "title": "落花生",
+    "author": "许地山"
+  },
+  {
+    "id": "1:窗帘后隐隐的透进清光来。",
+    "zh": "窗帘后隐隐的透进清光来。",
+    "pinyin": "chuang lian hou yin yin de tou jin qing guang lai 。",
+    "tier": 1,
+    "title": "笑",
+    "author": "冰心"
+  },
+  {
     "id": "2:清晨的雾气还没有散开，远处的山影显得格外安静。",
     "zh": "清晨的雾气还没有散开，远处的山影显得格外安静。",
     "pinyin": "qing chen de wu qi hai mei you san kai ， yuan chu de shan ying xian de ge wai an jing 。",
@@ -288,6 +320,30 @@ export const PHRASE_BANK: Phrase[] = [
     "zh": "那封信放在抽屉最里面，纸角已经有些卷起。",
     "pinyin": "na feng xin fang zai chou ti zui li mian ， zhi jiao yi jing you xie juan qi 。",
     "tier": 2
+  },
+  {
+    "id": "2:雨声渐渐的住了，窗帘后隐隐的透进清光来。",
+    "zh": "雨声渐渐的住了，窗帘后隐隐的透进清光来。",
+    "pinyin": "yu sheng jian jian de zhu le ， chuang lian hou yin yin de tou jin qing guang lai 。",
+    "tier": 2,
+    "title": "笑",
+    "author": "冰心"
+  },
+  {
+    "id": "2:暖国的雨，向来没有变过冰冷的坚硬的灿烂的雪花。",
+    "zh": "暖国的雨，向来没有变过冰冷的坚硬的灿烂的雪花。",
+    "pinyin": "nuan guo de yu ， xiang lai mei you bian guo bing leng de jian ying de can lan de xue hua 。",
+    "tier": 2,
+    "title": "雪",
+    "author": "鲁迅"
+  },
+  {
+    "id": "2:在逃去如飞的日子里，在千门万户的世界里的我能做些什么呢？",
+    "zh": "在逃去如飞的日子里，在千门万户的世界里的我能做些什么呢？",
+    "pinyin": "zai tao qu ru fei de ri zi li ， zai qian men wan hu de shi jie li de wo neng zuo xie shen me ne ？",
+    "tier": 2,
+    "title": "匆匆",
+    "author": "朱自清"
   },
   {
     "id": "3:当远处的脚步声越来越近时，我才发现迷宫的墙壁正在缓缓移动。",
@@ -434,6 +490,38 @@ export const PHRASE_BANK: Phrase[] = [
     "tier": 3
   },
   {
+    "id": "3:北京的冬季，地上还有积雪，灰黑色的秃树枝丫叉于晴朗的天空中。",
+    "zh": "北京的冬季，地上还有积雪，灰黑色的秃树枝丫叉于晴朗的天空中。",
+    "pinyin": "bei jing de dong ji ， di shang hai you ji xue ， hui hei se de tu shu zhi ya cha yu qing lang de tian kong zhong 。",
+    "tier": 3,
+    "title": "风筝",
+    "author": "鲁迅"
+  },
+  {
+    "id": "3:这上面的夜的天空，奇怪而高，我生平没有见过这样奇怪而高的天空。",
+    "zh": "这上面的夜的天空，奇怪而高，我生平没有见过这样奇怪而高的天空。",
+    "pinyin": "zhe shang mian de ye de tian kong ， qi guai er gao ， wo sheng ping mei you jian guo zhe yang qi guai er gao de tian kong 。",
+    "tier": 3,
+    "title": "秋夜",
+    "author": "鲁迅"
+  },
+  {
+    "id": "3:我看见他戴着黑布小帽，穿着黑布大马褂，深青布棉袍，蹒跚地走到铁道边。",
+    "zh": "我看见他戴着黑布小帽，穿着黑布大马褂，深青布棉袍，蹒跚地走到铁道边。",
+    "pinyin": "wo kan jian ta dai zhe hei bu xiao mao ， chuan zhe hei bu da ma gua ， shen qing bu mian pao ， pan shan di zou dao tie dao bian 。",
+    "tier": 3,
+    "title": "背影",
+    "author": "朱自清"
+  },
+  {
+    "id": "3:曲曲折折的荷塘上面，弥望的是田田的叶子。叶子出水很高，像亭亭的舞女的裙。",
+    "zh": "曲曲折折的荷塘上面，弥望的是田田的叶子。叶子出水很高，像亭亭的舞女的裙。",
+    "pinyin": "qu qu zhe zhe de he tang shang mian ， mi wang de shi tian tian de ye zi 。 ye zi chu shui hen gao ， xiang ting ting de wu nv de qun 。",
+    "tier": 3,
+    "title": "荷塘月色",
+    "author": "朱自清"
+  },
+  {
     "id": "4:他沿着被雨水冲得发亮的石阶一步步往上走，身后的城市灯光渐渐沉入浓雾。",
     "zh": "他沿着被雨水冲得发亮的石阶一步步往上走，身后的城市灯光渐渐沉入浓雾。",
     "pinyin": "ta yan zhe bei yu shui chong de fa liang de shi jie yi bu bu wang shang zou ， shen hou de cheng shi deng guang jian jian chen ru nong wu 。",
@@ -578,6 +666,30 @@ export const PHRASE_BANK: Phrase[] = [
     "tier": 4
   },
   {
+    "id": "4:枣树，他们简直落尽了叶子。先前，还有一两个孩子来打他们别人打剩的枣子，现在是一个也不剩了。",
+    "zh": "枣树，他们简直落尽了叶子。先前，还有一两个孩子来打他们别人打剩的枣子，现在是一个也不剩了。",
+    "pinyin": "zao shu ， ta men jian zhi luo jin le ye zi 。 xian qian ， hai you yi liang ge hai zi lai da ta men bie ren da sheng de zao zi ， xian zai shi yi ge ye bu sheng le 。",
+    "tier": 4,
+    "title": "秋夜",
+    "author": "鲁迅"
+  },
+  {
+    "id": "4:他用两手攀着上面，两脚再向上缩；他肥胖的身子向左微倾，显出努力的样子。",
+    "zh": "他用两手攀着上面，两脚再向上缩；他肥胖的身子向左微倾，显出努力的样子。",
+    "pinyin": "ta yong liang shou pan zhe shang mian ， liang jiao zai xiang shang suo ； ta fei pang de shen zi xiang zuo wei qing ， xian chu nu li de yang zi 。",
+    "tier": 4,
+    "title": "背影",
+    "author": "朱自清"
+  },
+  {
+    "id": "4:你坐在船上，应该是游山的态度，看看四周物色，随处可见的山，岸旁的乌桕，河边的红蓼和白苹，渔舍，各式各样的桥。",
+    "zh": "你坐在船上，应该是游山的态度，看看四周物色，随处可见的山，岸旁的乌桕，河边的红蓼和白苹，渔舍，各式各样的桥。",
+    "pinyin": "ni zuo zai chuan shang ， ying gai shi you shan de tai du ， kan kan si zhou wu se ， sui chu ke jian de shan ， an pang de wu jiu ， he bian de hong liao he bai ping ， yu she ， ge shi ge yang de qiao 。",
+    "tier": 4,
+    "title": "乌篷船",
+    "author": "周作人"
+  },
+  {
     "id": "5:魑魅魍魉般的黑影在长廊尽头若隐若现，他屏息凝神，攥紧手中的旧地图继续踽踽前行。",
     "zh": "魑魅魍魉般的黑影在长廊尽头若隐若现，他屏息凝神，攥紧手中的旧地图继续踽踽前行。",
     "pinyin": "chi mei wang liang ban de hei ying zai chang lang jin tou ruo yin ruo xian ， ta bing xi ning shen ， zuan jin shou zhong de jiu di tu ji xu ju ju qian xing 。",
@@ -720,5 +832,29 @@ export const PHRASE_BANK: Phrase[] = [
     "zh": "天色将明，密林里的雾气仍未散去，他望着远处若隐若现的城门，拖着疲惫的身体继续向前走去。",
     "pinyin": "tian se jiang ming ， mi lin li de wu qi reng wei san qu ， ta wang zhe yuan chu ruo yin ruo xian de cheng men ， tuo zhe pi bei de shen ti ji xu xiang qian zou qu 。",
     "tier": 5
+  },
+  {
+    "id": "5:这上面的夜的天空，奇怪而高，我生平没有见过这样奇怪而高的天空。他仿佛要离开人间而去，使人们仰面不再看见。",
+    "zh": "这上面的夜的天空，奇怪而高，我生平没有见过这样奇怪而高的天空。他仿佛要离开人间而去，使人们仰面不再看见。",
+    "pinyin": "zhe shang mian de ye de tian kong ， qi guai er gao ， wo sheng ping mei you jian guo zhe yang qi guai er gao de tian kong 。 ta fang fu yao li kai ren jian er qu ， shi ren men yang mian bu zai kan jian 。",
+    "tier": 5,
+    "title": "秋夜",
+    "author": "鲁迅"
+  },
+  {
+    "id": "5:月光如流水一般，静静地泻在这一片叶子和花上。薄薄的青雾浮起在荷塘里。叶子和花仿佛在牛乳中洗过一样；又像笼着轻纱的梦。",
+    "zh": "月光如流水一般，静静地泻在这一片叶子和花上。薄薄的青雾浮起在荷塘里。叶子和花仿佛在牛乳中洗过一样；又像笼着轻纱的梦。",
+    "pinyin": "yue guang ru liu shui yi ban ， jing jing di xie zai zhe yi pian ye zi he hua shang 。 bao bao de qing wu fu qi zai he tang li 。 ye zi he hua fang fu zai niu ru zhong xi guo yi yang ； you xiang long zhe qing sha de meng 。",
+    "tier": 5,
+    "title": "荷塘月色",
+    "author": "朱自清"
+  },
+  {
+    "id": "5:你坐在船上，应该是游山的态度，看看四周物色，随处可见的山，岸旁的乌桕，河边的红蓼和白苹，渔舍，各式各样的桥，困倦的时候睡在舱中拿出随笔来看。",
+    "zh": "你坐在船上，应该是游山的态度，看看四周物色，随处可见的山，岸旁的乌桕，河边的红蓼和白苹，渔舍，各式各样的桥，困倦的时候睡在舱中拿出随笔来看。",
+    "pinyin": "ni zuo zai chuan shang ， ying gai shi you shan de tai du ， kan kan si zhou wu se ， sui chu ke jian de shan ， an pang de wu jiu ， he bian de hong liao he bai ping ， yu she ， ge shi ge yang de qiao ， kun juan de shi hou shui zai cang zhong na chu sui bi lai kan 。",
+    "tier": 5,
+    "title": "乌篷船",
+    "author": "周作人"
   }
 ];

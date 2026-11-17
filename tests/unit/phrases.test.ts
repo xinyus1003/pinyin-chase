@@ -16,12 +16,12 @@ describe('normalizePinyin', () => {
 });
 
 describe('phrase bank', () => {
-  it('contains 120 unique items across five tiers', () => {
-    expect(PHRASE_BANK).toHaveLength(120);
-    expect(new Set(PHRASE_BANK.map((phrase) => phrase.zh)).size).toBe(120);
-    for (const tier of [1, 2, 3, 4, 5] as const) {
-      expect(PHRASE_BANK.filter((phrase) => phrase.tier === tier)).toHaveLength(24);
-    }
+  it('contains all original and literary items across five tiers', () => {
+    expect(PHRASE_BANK).toHaveLength(137);
+    expect(new Set(PHRASE_BANK.map((phrase) => phrase.zh)).size).toBe(137);
+    expect([1, 2, 3, 4, 5].map((tier) => (
+      PHRASE_BANK.filter((phrase) => phrase.tier === tier).length
+    ))).toEqual([28, 27, 28, 27, 27]);
   });
 
   it('provides normalized pinyin for full-sentence prompts', () => {

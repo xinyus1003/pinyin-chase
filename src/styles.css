@@ -322,6 +322,14 @@ canvas {
   line-height: 1.36;
   letter-spacing: .01em;
 }
+.phrase-source {
+  margin-bottom: 5px;
+  color: var(--cyan);
+  font-size: .67rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: .08em;
+}
 .pinyin {
   margin-top: 8px;
   color: #fff6d88a;
@@ -499,6 +507,7 @@ button:focus-visible { outline: 3px solid var(--cyan); outline-offset: 3px; }
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .phrase-source { margin-bottom: 3px; font-size: .61rem; }
   .pinyin {
     max-height: 2.7em;
     margin-top: 3px;

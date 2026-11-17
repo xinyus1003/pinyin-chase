@@ -23,6 +23,18 @@ test('starts a run, focuses the native input and advances on a correct letter', 
   await expect(page.getByTestId('progress')).toHaveAttribute('data-progress', '1');
 });
 
+test('shows title and author when a literary excerpt is selected', async ({ page }) => {
+  await page.addInitScript(() => {
+    Date.now = () => 6;
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: '开始逃跑' }).click();
+
+  await expect(page.locator('.phrase-source')).toHaveText('《笑》 · 冰心');
+  await expect(page.getByTestId('prompt')).toContainText('窗帘后隐隐的透进清光来。');
+  await expect(page.getByTestId('prompt')).toHaveAttribute('data-pinyin', /chuang lian hou yin yin de tou jin qing guang lai/);
+});
+
 test('wrong input stalls progress and shows a visible error state', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: '开始逃跑' }).click();

@@ -5,6 +5,11 @@ export function promptCacheKey(phrase: Phrase, normalizedLetterIndex: number): s
   return `${phrase.id}\u0000${phrase.pinyin}\u0000${normalizedLetterIndex}`;
 }
 
+export function formatPhraseAttribution(phrase: Phrase): string | null {
+  if (!phrase.title || !phrase.author) return null;
+  return `《${phrase.title}》 · ${phrase.author}`;
+}
+
 export function updatePrompt(root: HTMLElement, phrase: Phrase, letterIndex: number): void {
   const normalized = normalizePinyin(phrase.pinyin);
   let normalizedIndex = 0;
@@ -16,7 +21,9 @@ export function updatePrompt(root: HTMLElement, phrase: Phrase, letterIndex: num
     const state = current < letterIndex ? 'done' : current === letterIndex ? 'current' : '';
     return `<span class="pinyin-letter ${state}">${char}</span>`;
   }).join('');
-  root.innerHTML = `<div class="zh">${phrase.zh}</div><div class="pinyin">${letters}</div>`;
+  const attribution = formatPhraseAttribution(phrase);
+  const source = attribution ? `<div class="phrase-source">${attribution}</div>` : '';
+  root.innerHTML = `${source}<div class="zh">${phrase.zh}</div><div class="pinyin">${letters}</div>`;
   root.dataset.pinyin = phrase.pinyin;
   root.dataset.expected = normalized[letterIndex] ?? '';
 
